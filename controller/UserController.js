@@ -3,10 +3,10 @@ import User from "../models/User.js";
 import dotenv from "dotenv";
 import twilio from "twilio";
 import moment from "moment";
+import { where } from "sequelize";
 
 dotenv.config();
 
-// OTP setup
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = twilio(accountSid, authToken);
@@ -38,11 +38,9 @@ export const register = async (req, res) => {
         .json({ message: "Phone number is already in use" });
     }
 
-    // generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000);
     const otp_expires = moment().add(5, "minutes").toDate();
 
-    // send OTP
     await client.messages.create({
       body: `Your OTP is ${otp}`,
       from: process.env.TWILIO_PHONE_NUMBER,
@@ -74,8 +72,6 @@ export const register = async (req, res) => {
   }
 };
 
-// otp verification
-
 export const verifyOtp = async (req, res) => {
   const { phone_number, otp } = req.body;
 
@@ -94,7 +90,6 @@ export const verifyOtp = async (req, res) => {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    // check OTP
     if (moment().isAfter(user.otp_expires)) {
       console.log("OTP expired");
       return res.status(400).json({ message: "OTP has expired" });
@@ -146,6 +141,65 @@ export const getUser = async (req, res) => {
   try {
     const response = await User.findAll();
     res.status(200).json(response);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateUser = async (req, res) => {
+  const { id } = req.params;
+  const { name, phone_number, email, alamat, password, confirm_password } =
+    req.body;
+
+  if (password && password.length < 6) {
+    return res
+      .status(400)
+      .json({ message: "Password must be at least 6 characters" });
+  }
+
+  if (password && password !== confirm_password) {
+    return res.status(400).json({ message: "Passwords do not match" });
+  }
+
+  try {
+    const user = await User.findOne({ where: { id } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (email && email !== user.email) {
+      const existingEmail = await User.findOne({ where: { email } });
+      if (existingEmail) {
+        return res.status(400).json({ message: "Email is already in use" });
+      }
+    }
+
+    if (phone_number && phone_number !== user.phone_number) {
+      const existingPhoneNumber = await User.findOne({
+        where: { phone_number },
+      });
+      if (existingPhoneNumber) {
+        return res
+          .status(400)
+          .json({ message: "Phone number is already in use" });
+      }
+    }
+
+    const updateData = {
+      name: name || user.name,
+      email: email || user.email,
+      phone_number: phone_number || user.phone_number,
+      alamat: alamat || user.alamat,
+      ...(password && { password: await bcrypt.hash(password, 10) }),
+    };
+
+    await user.update(updateData, {
+      where: { id },
+    });
+
+    return res.status(200).json({ message: "User updated" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal server error" });
