@@ -1,7 +1,7 @@
 import { Sequelize } from "sequelize";
 
-const db = new Sequelize("db_solonet_app", "root", "", {
-  host: "localhost",
+const db = new Sequelize("my_solonet", "tino", "training2024", {
+  host: "connectis.my.id",
   dialect: "mysql",
 });
 

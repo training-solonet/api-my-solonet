@@ -11,7 +11,7 @@ const User = db.define(
       allowNull: false,
     },
     phone_number: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       allowNull: false,
     },
     email: {
@@ -29,7 +29,13 @@ const User = db.define(
     },
     confirm_password: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
+    },
+    otp: {
+      type: DataTypes.INTEGER,
+    },
+    verified: {
+      type: DataTypes.BOOLEAN,
     },
   },
   {
