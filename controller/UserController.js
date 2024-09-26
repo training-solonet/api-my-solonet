@@ -1,21 +1,20 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import dotenv from "dotenv";
-import twilio from "twilio";
-import moment from "moment";
-import { where } from "sequelize";
+// import twilio from "twilio";
+// import moment from "moment";
 
 dotenv.config();
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const client = twilio(accountSid, authToken);
+// const accountSid = process.env.TWILIO_ACCOUNT_SID;
+// const authToken = process.env.TWILIO_AUTH_TOKEN;
+// const client = twilio(accountSid, authToken);
 
 export const register = async (req, res) => {
   const { name, phone_number, email, alamat, password, confirm_password } =
     req.body;
 
-  if (password.length < 6) {
+  if (password.length <= 6) {
     return res
       .status(400)
       .json({ message: "Password must be at least 6 characters" });
@@ -38,14 +37,14 @@ export const register = async (req, res) => {
         .json({ message: "Phone number is already in use" });
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000);
-    const otp_expires = moment().add(5, "minutes").toDate();
+    // const otp = Math.floor(100000 + Math.random() * 900000);
+    // const otp_expires = moment().add(5, "minutes").toDate();
 
-    await client.messages.create({
-      body: `Your OTP is ${otp}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
-      to: phone_number,
-    });
+    // await client.messages.create({
+    //   body: `Your OTP is ${otp}`,
+    //   from: process.env.TWILIO_PHONE_NUMBER,
+    //   to: phone_number,
+    // });
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -56,58 +55,58 @@ export const register = async (req, res) => {
       email,
       alamat,
       password: hashedPassword,
-      otp,
-      otp_expires,
-      verified: false,
+      // otp,
+      // otp_expires,
+      verified: true,
     });
 
-    console.log(otp);
+    // console.log(otp);
 
     return res
       .status(201)
-      .json({ message: "User created successfully. OTP sent to your phone." });
+      .json({ message: "User created successfully." });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
 
-export const verifyOtp = async (req, res) => {
-  const { phone_number, otp } = req.body;
+// export const verifyOtp = async (req, res) => {
+//   const { phone_number, otp } = req.body;
 
-  try {
-    const cleanedPhoneNumber = phone_number.trim();
-    const cleanedOtp = otp.trim();
+//   try {
+//     const cleanedPhoneNumber = phone_number.trim();
+//     const cleanedOtp = otp.trim();
 
-    const user = await User.findOne({
-      where: { phone_number: cleanedPhoneNumber, otp: cleanedOtp },
-    });
+//     const user = await User.findOne({
+//       where: { phone_number: cleanedPhoneNumber, otp: cleanedOtp },
+//     });
 
-    if (!user) {
-      console.log(
-        `Invalid OTP for phone number ${phone_number}: Received OTP ${otp}`
-      );
-      return res.status(400).json({ message: "Invalid OTP" });
-    }
+//     if (!user) {
+//       console.log(
+//         `Invalid OTP for phone number ${phone_number}: Received OTP ${otp}`
+//       );
+//       return res.status(400).json({ message: "Invalid OTP" });
+//     }
 
-    if (moment().isAfter(user.otp_expires)) {
-      console.log("OTP expired");
-      return res.status(400).json({ message: "OTP has expired" });
-    }
+//     if (moment().isAfter(user.otp_expires)) {
+//       console.log("OTP expired");
+//       return res.status(400).json({ message: "OTP has expired" });
+//     }
 
-    user.verified = true;
-    user.otp = null;
-    user.otp_expires = null;
-    await user.save();
+//     user.verified = true;
+//     user.otp = null;
+//     user.otp_expires = null;
+//     await user.save();
 
-    return res
-      .status(200)
-      .json({ message: "Phone number verified successfully" });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-};
+//     return res
+//       .status(200)
+//       .json({ message: "Phone number verified successfully" });
+//   } catch (error) {
+//     console.log(error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
 
 export const login = async (req, res) => {
   const { name, email, password } = req.body;
@@ -152,7 +151,7 @@ export const updateUser = async (req, res) => {
   const { name, phone_number, email, alamat, password, confirm_password } =
     req.body;
 
-  if (password && password.length < 6) {
+  if (password && password.length <= 6) {
     return res
       .status(400)
       .json({ message: "Password must be at least 6 characters" });

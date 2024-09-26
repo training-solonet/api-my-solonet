@@ -5,7 +5,7 @@ import Det_product from "./Det_product.js";
 const { DataTypes } = Sequelize;
 
 const Product = db.define(
-  "product", //nama tabel
+  "product", 
   {
     kode: DataTypes.STRING,
     nama: DataTypes.STRING,
