@@ -1,6 +1,6 @@
 import { Sequelize } from "sequelize";
 import db from "../config/Database.js";
-import detail_pembelian from "./Det_pembelian";
+import detail_pembelian from "./Det_pembelian.js";
 
 const { DataTypes } = Sequelize;
 
