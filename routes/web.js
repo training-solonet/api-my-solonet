@@ -1,5 +1,7 @@
 import express from "express";
-import { product  } from '../controller/ProductController.js';
+import { product, productById } from '../controller/ProductController.js';
+import { getPromo } from '../controller/PromoController.js';
+import { kategori }  from '../controller/kategoriController.js';
 import { login, register, getUser, updateUser } from "../controller/UserController.js";
 import { getPembelian } from "../controller/PembelianController.js";
 
@@ -15,6 +17,9 @@ router.put("/updateUser/:id", updateUser);
 
 // Product
 router.get("/product", product);
+router.get("/kategori", kategori);
+router.get("/product-promo", getPromo);
+router.get("/product/:id", productById );
 
 // Pembelian
 router.get("/pembelian", getPembelian);
