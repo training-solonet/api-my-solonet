@@ -1,22 +1,20 @@
 import { Sequelize } from "sequelize";
 import db from "../config/Database.js";
 
-const { Datatypes } = Sequelize;
+const { DataTypes } = Sequelize;
 
 const detail_pembelian = db.define(
     "detail_pembelian",
     {
-        no_invoice: Datatypes.STRING,
-        id_product: Datatypes.INTEGER,
-        qty: Datatypes.INTEGER,
-        harga: Datatypes.INTEGER,
+        no_invoice: DataTypes.STRING,
+        id_product: DataTypes.INTEGER,
+        qty: DataTypes.INTEGER,
+        harga_product: DataTypes.INTEGER,
     },
     {
         freezeTableName: true,
         underscored: true
     }
-);
-
-
+);  
 
 export default detail_pembelian;
