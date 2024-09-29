@@ -1,7 +1,6 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import dotenv from "dotenv";
-import { profile } from "console";
 // import twilio from "twilio";
 // import moment from "moment";
 
@@ -114,13 +113,25 @@ export const registerGoogle = async(profile) => {
     let user = await User.findOne({where: {google_id: profile.id}});
 
     if (!user) {
-      user = await User.create({
-        google_id: profile.id,
-        name: profile.displayName,
-        email: profile.emails[0].value,
-      });
-      await user.save();
+      user = await User.findOne({where: {email: profile.emails[0].value}});
+
+      if(user) {
+        user.google_id = profile.id;
+        await user.save();
+        return user;
+      }
+
+      if (!user) {
+        const user = await User.create({
+          google_id: profile.id,
+          name: profile.displayName,
+          email: profile.emails[0].value,
+          verified: true
+        });
+        await user.save();
+      }
     }
+    return user;
   } catch (error) {
     console.error('Error register google', error);
     return null;
@@ -154,6 +165,21 @@ export const login = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const loginGoogle = async(profile) => {
+  try {
+    const user = await User.findOne({where: {google_id: profile.id}});
+
+    if (!user) {
+      return user;
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error login google', error);
+    return null;
+  }
+}
 
 export const getUser = async (req, res) => {
   try {

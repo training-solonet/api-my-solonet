@@ -5,7 +5,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import cors from "cors";
 import router from "./routes/web.js";
 import dotenv from "dotenv";
-import { registerGoogle } from "./controller/UserController.js";
+import { loginGoogle, registerGoogle } from "./controller/UserController.js";
 
 dotenv.config();
 
@@ -35,18 +35,29 @@ passport.deserializeUser((user, done) => {
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: 'http://localhost:5000/auth/google/callback'  
+  callbackURL: `http://localhost:${port}/auth/google/callback`  
 }, async(accessToken, refreshToken, profile, done) => {
   try {
-    const user = await registerGoogle(profile);
-    if(user) {
-      return done(null, user);
-    }else{
-      return done(null, false);
+    let user = await loginGoogle(profile);
+
+    if (!user) {
+      user = await registerGoogle(profile);
+
+      if (user) {
+        return done(null, user);
+      } else {
+        return done(null, false, { message: "Google account not linked" });
+      }
     }
+
+    if (!user) {
+      return done(null, false, { message: "Google account not linked" });
+    }
+
+    done(null, user);
   } catch (error) {
-    return done(error, false);
-  }  
+    
+  }
 }));
 
 app.use(router);
