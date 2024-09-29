@@ -8,15 +8,15 @@ const User = db.define(
   {
     name: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     phone_number: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     email: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       unique: true,
     },
     alamat: {
@@ -25,7 +25,7 @@ const User = db.define(
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     confirm_password: {
       type: DataTypes.STRING,
@@ -37,6 +37,11 @@ const User = db.define(
     verified: {
       type: DataTypes.BOOLEAN,
     },
+    google_id: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: true,
+    }
   },
   {
     freezeTableName: true,
