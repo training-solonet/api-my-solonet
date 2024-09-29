@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import dotenv from "dotenv";
+import { profile } from "console";
 // import twilio from "twilio";
 // import moment from "moment";
 
@@ -107,6 +108,24 @@ export const register = async (req, res) => {
 //     return res.status(500).json({ message: "Internal server error" });
 //   }
 // };
+
+export const registerGoogle = async(profile) => {
+  try {
+    let user = await User.findOne({where: {google_id: profile.id}});
+
+    if (!user) {
+      user = await User.create({
+        google_id: profile.id,
+        name: profile.displayName,
+        email: profile.emails[0].value,
+      });
+      await user.save();
+    }
+  } catch (error) {
+    console.error('Error register google', error);
+    return null;
+  }
+}
 
 export const login = async (req, res) => {
   const { name, email, password } = req.body;

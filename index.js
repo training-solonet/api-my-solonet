@@ -5,6 +5,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import cors from "cors";
 import router from "./routes/web.js";
 import dotenv from "dotenv";
+import { registerGoogle } from "./controller/UserController.js";
 
 dotenv.config();
 
@@ -35,18 +36,23 @@ passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   callbackURL: 'http://localhost:5000/auth/google/callback'  
-}, (accessToken, refreshToken, profile, done) => {
-  return done(null, profile);  
+}, async(accessToken, refreshToken, profile, done) => {
+  try {
+    const user = await registerGoogle(profile);
+    if(user) {
+      return done(null, user);
+    }else{
+      return done(null, false);
+    }
+  } catch (error) {
+    return done(error, false);
+  }  
 }));
 
 app.use(router);
 
 app.get("/", (req, res) => {
   res.send("Hello World");
-});
-
-app.get("/login", (req, res) => {
-  res.send("berhasil login");
 });
 
 app.get("/logout", (req, res) => {
