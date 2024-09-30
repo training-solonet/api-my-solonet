@@ -1,14 +1,10 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import dotenv from "dotenv";
-// import twilio from "twilio";
-// import moment from "moment";
+import axios from "axios";
+import moment from "moment";
 
 dotenv.config();
-
-// const accountSid = process.env.TWILIO_ACCOUNT_SID;
-// const authToken = process.env.TWILIO_AUTH_TOKEN;
-// const client = twilio(accountSid, authToken);
 
 export const register = async (req, res) => {
   const { name, phone_number, email, alamat, password, confirm_password } =
@@ -37,30 +33,35 @@ export const register = async (req, res) => {
         .json({ message: "Phone number is already in use" });
     }
 
-    // const otp = Math.floor(100000 + Math.random() * 900000);
-    // const otp_expires = moment().add(5, "minutes").toDate();
-
-    // await client.messages.create({
-    //   body: `Your OTP is ${otp}`,
-    //   from: process.env.TWILIO_PHONE_NUMBER,
-    //   to: phone_number,
-    // });
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    const otp_expires = moment().add(5, "minutes").toDate();
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    await User.create({
-      name,
-      phone_number,
-      email,
-      alamat,
-      password: hashedPassword,
-      // otp,
-      // otp_expires,
-      verified: true,
-    });
+    try {
+      const response = await axios.post('https://api.qiscus.com/api/v1/otp/request', {
+        app_id: process.env.QISCUS_APP_ID,
+        secret_key: process.env.QISCUS_SECRET_KEY,
+        phone_number: phone_number,
+      });
 
-    // console.log(otp);
+      console.log(response.data);
+      
+      await User.create({
+        name,
+        phone_number,
+        email,
+        alamat,
+        password: hashedPassword,
+        otp,
+        otp_expires,
+        verified: false,
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
 
     return res
       .status(201)
@@ -70,43 +71,6 @@ export const register = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
-
-// export const verifyOtp = async (req, res) => {
-//   const { phone_number, otp } = req.body;
-
-//   try {
-//     const cleanedPhoneNumber = phone_number.trim();
-//     const cleanedOtp = otp.trim();
-
-//     const user = await User.findOne({
-//       where: { phone_number: cleanedPhoneNumber, otp: cleanedOtp },
-//     });
-
-//     if (!user) {
-//       console.log(
-//         `Invalid OTP for phone number ${phone_number}: Received OTP ${otp}`
-//       );
-//       return res.status(400).json({ message: "Invalid OTP" });
-//     }
-
-//     if (moment().isAfter(user.otp_expires)) {
-//       console.log("OTP expired");
-//       return res.status(400).json({ message: "OTP has expired" });
-//     }
-
-//     user.verified = true;
-//     user.otp = null;
-//     user.otp_expires = null;
-//     await user.save();
-
-//     return res
-//       .status(200)
-//       .json({ message: "Phone number verified successfully" });
-//   } catch (error) {
-//     console.log(error);
-//     return res.status(500).json({ message: "Internal server error" });
-//   }
-// };
 
 export const registerGoogle = async(profile) => {
   try {
@@ -249,3 +213,29 @@ export const updateUser = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const verifyOtp = async (req, res) => {
+  const { phone_number, otp } = req.body;
+
+  try {
+    const user = await User.findOne({ where: { phone_number } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.otp === otp && moment().isBefore(user.otp_expires)) {
+        user.verified = true;
+        user.otp = null;
+        user.otp_expires = null;
+        await user.save();
+
+        return res.status(200).json({ message: "Phone number verified" });
+    } else {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}

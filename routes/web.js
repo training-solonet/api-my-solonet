@@ -13,7 +13,7 @@ const router = express.Router();
 router.get("/users", getUser);
 router.post("/register", register);
 router.post("/login", login);
-// router.post("/verifyOtp", verifyOtp);
+// router.post("/verify-otp", verifyOtp);
 router.put("/updateUser/:id", updateUser);
 
 // Product
