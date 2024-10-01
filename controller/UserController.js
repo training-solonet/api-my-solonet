@@ -47,7 +47,7 @@ export const register = async (req, res) => {
       });
 
       console.log(response.data);
-      
+
       await User.create({
         name,
         phone_number,
@@ -72,14 +72,14 @@ export const register = async (req, res) => {
   }
 };
 
-export const registerGoogle = async(profile) => {
+export const registerGoogle = async (profile) => {
   try {
-    let user = await User.findOne({where: {google_id: profile.id}});
+    let user = await User.findOne({ where: { google_id: profile.id } });
 
     if (!user) {
-      user = await User.findOne({where: {email: profile.emails[0].value}});
+      user = await User.findOne({ where: { email: profile.emails[0].value } });
 
-      if(user) {
+      if (user) {
         user.google_id = profile.id;
         await user.save();
         return user;
@@ -130,9 +130,9 @@ export const login = async (req, res) => {
   }
 };
 
-export const loginGoogle = async(profile) => {
+export const loginGoogle = async (profile) => {
   try {
-    const user = await User.findOne({where: {google_id: profile.id}});
+    const user = await User.findOne({ where: { google_id: profile.id } });
 
     if (!user) {
       return user;
@@ -214,28 +214,63 @@ export const updateUser = async (req, res) => {
   }
 };
 
-export const verifyOtp = async (req, res) => {
-  const { phone_number, otp } = req.body;
+export const sendOtp = async (req, res) => {
+  const { phone_number, otp } = req.body;  // Get data from the request body
 
   try {
-    const user = await User.findOne({ where: { phone_number } });
+    const response = await axios.post('https://omnichannel.qiscus.com/whatsapp/v1/' + process.env.QISCUS_APP_ID + '/' + process.env.WA_CHANNEL_ID + '/messages', {
+      to: phone_number,
+      type: "template",
+      template: {
+        namespace: process.env.WA_TEMPLATE_NAMESPACE,
+        name: process.env.WA_TEMPLATE_NAME,
+        language: {
+          policy: "deterministic",
+          code: "id"
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: otp
+              }
+            ]
+          },
+          {
+            type: "button",
+            sub_type: "url",
+            index: "0",
+            parameters: [
+              {
+                type: "text",
+                text: otp
+              }
+            ]
+          }
+        ]
+      }
+    }, {
+      headers: {
+        'Qiscus-App-Id': process.env.QISCUS_APP_ID,
+        'Qiscus-Secret-Key': process.env.QISCUS_SECRET_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (user.otp === otp && moment().isBefore(user.otp_expires)) {
-        user.verified = true;
-        user.otp = null;
-        user.otp_expires = null;
-        await user.save();
-
-        return res.status(200).json({ message: "Phone number verified" });
-    } else {
-      return res.status(400).json({ message: "Invalid OTP" });
-    }
+    // Send the response back to the client
+    res.json({
+      success: true,
+      message: 'OTP sent successfully',
+      data: response.data
+    });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error('Error sending message:', error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Error sending message',
+      error: error.response?.data || error.message
+    });
   }
 }
