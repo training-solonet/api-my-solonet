@@ -4,7 +4,7 @@ import passport from "passport";
 import { product, productById } from '../controller/ProductController.js';
 import { getPromo } from '../controller/PromoController.js';
 import { kategori }  from '../controller/kategoriController.js';
-import { login, register, getUser, updateUser, verifyOtp, configuration, resendOtp } from "../controller/UserController.js";
+import { login, register, getUser, updateUser, verifyOtp, configuration, resendOtp, reqResetPassword, resetPassword } from "../controller/UserController.js";
 import { getPembelian } from "../controller/PembelianController.js";
 
 const router = express.Router();
@@ -16,6 +16,8 @@ router.post("/login", login);
 router.post("/verify-otp", verifyOtp);
 router.post("/resend-OTP", resendOtp);  
 router.post("/config", configuration);
+router.post('/req-otp', reqResetPassword);
+router.post('/reset-password', resetPassword);
 router.put("/updateUser/:id", updateUser);
 
 // Product
