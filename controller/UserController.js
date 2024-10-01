@@ -40,14 +40,17 @@ export const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     try {
-      const response = await axios.post('https://api.qiscus.com/api/v1/otp/request', {
-        app_id: process.env.QISCUS_APP_ID,
-        secret_key: process.env.QISCUS_SECRET_KEY,
-        phone_number: phone_number,
-      });
+      const response = await axios.post(
+        "https://api.qiscus.com/api/v1/otp/request",
+        {
+          app_id: process.env.QISCUS_APP_ID,
+          secret_key: process.env.QISCUS_SECRET_KEY,
+          phone_number: phone_number,
+        }
+      );
 
       console.log(response.data);
-      
+
       await User.create({
         name,
         phone_number,
@@ -63,23 +66,21 @@ export const register = async (req, res) => {
       return res.status(500).json({ message: "Internal server error" });
     }
 
-    return res
-      .status(201)
-      .json({ message: "User created successfully." });
+    return res.status(201).json({ message: "User created successfully." });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
 
-export const registerGoogle = async(profile) => {
+export const registerGoogle = async (profile) => {
   try {
-    let user = await User.findOne({where: {google_id: profile.id}});
+    let user = await User.findOne({ where: { google_id: profile.id } });
 
     if (!user) {
-      user = await User.findOne({where: {email: profile.emails[0].value}});
+      user = await User.findOne({ where: { email: profile.emails[0].value } });
 
-      if(user) {
+      if (user) {
         user.google_id = profile.id;
         await user.save();
         return user;
@@ -90,17 +91,17 @@ export const registerGoogle = async(profile) => {
           google_id: profile.id,
           name: profile.displayName,
           email: profile.emails[0].value,
-          verified: true
+          verified: true,
         });
         await user.save();
       }
     }
     return user;
   } catch (error) {
-    console.error('Error register google', error);
+    console.error("Error register google", error);
     return null;
   }
-}
+};
 
 export const login = async (req, res) => {
   const { name, email, password } = req.body;
@@ -130,9 +131,9 @@ export const login = async (req, res) => {
   }
 };
 
-export const loginGoogle = async(profile) => {
+export const loginGoogle = async (profile) => {
   try {
-    const user = await User.findOne({where: {google_id: profile.id}});
+    const user = await User.findOne({ where: { google_id: profile.id } });
 
     if (!user) {
       return user;
@@ -140,10 +141,10 @@ export const loginGoogle = async(profile) => {
 
     return null;
   } catch (error) {
-    console.error('Error login google', error);
+    console.error("Error login google", error);
     return null;
   }
-}
+};
 
 export const getUser = async (req, res) => {
   try {
@@ -154,6 +155,70 @@ export const getUser = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const configuration = async (req, res) => {
+  const { email, password, confirm_password, phone_number } = req.body;
+
+  if (password.length <= 6) {
+    return res.status(400).json({ message: "Password must be at least 6 characters" });
+  }
+
+  if (password !== confirm_password) {
+    return res.status(400).json({ message: "Passwords do not match" });
+  }
+
+  try {
+   const user = await User.findOne({where: { email }});
+   
+   if(!user){
+     return res.status(404).json({message: "User not found"});
+   }
+   
+   const existingPhoneNumber = await User.findOne({where: { phone_number }});
+   if(existingPhoneNumber){
+     return res.status(400).json({message: "Phone number is already in use"});
+   }
+
+   const salt = await bcrypt.genSalt(10);
+   const hashedPassword = await bcrypt.hash(password, salt);
+
+   user.password = hashedPassword;
+   
+   if (phone_number && phone_number !== user.phone_number) {
+    const otp = Math.floor(100000 + Math.random() * 900000);
+    const otp_expires = moment().add(5, "minutes").toDate();
+
+    try {
+      const response = await axios.post(
+        "https://api.qiscus.com/api/v1/otp/request",
+        {
+          app_id: process.env.QISCUS_APP_ID,
+          secret_key: process.env.QISCUS_SECRET_KEY,
+          phone_number: phone_number,
+        }
+      );
+
+      console.log(response.data);
+
+      user.phone_number = phone_number;
+      user.otp = otp;
+      user.otp_expires = otp_expires;
+      user.verified = false;
+
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "Failed to send OTP" });
+    }
+  }
+
+   await user.save();
+
+    return res.status(200).json({message: "Password and phone number set successfully. OTP sent to phone number."});
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
 
 export const updateUser = async (req, res) => {
   const { id } = req.params;
@@ -225,14 +290,52 @@ export const verifyOtp = async (req, res) => {
     }
 
     if (user.otp === otp && moment().isBefore(user.otp_expires)) {
-        user.verified = true;
-        user.otp = null;
-        user.otp_expires = null;
-        await user.save();
+      user.verified = true;
+      user.otp = null;
+      user.otp_expires = null;
+      await user.save();
 
-        return res.status(200).json({ message: "Phone number verified" });
+      return res.status(200).json({ message: "Phone number verified" });
     } else {
       return res.status(400).json({ message: "Invalid OTP" });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const resendOtp = async (req, res) => {
+  const { phone_number } = req.body;
+
+  try {
+    const user = await User.findOne({ where: { phone_number } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const newotp = Math.floor(100000 + Math.random() * 900000);
+    const otp_expires = moment().add(5, "minutes").toDate();
+
+    try {
+      const response = await axios.post(
+        "https://api.qiscus.com/api/v1/otp/request",
+        {
+          app_id: process.env.QISCUS_APP_ID,
+          secret_key: process.env.QISCUS_SECRET_KEY,
+          phone_number: phone_number,
+        }
+      );
+
+      console.log(response.data);
+
+      user.otp = newotp;
+      user.otp_expires = otp_expires;
+      await user.save();
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "Failed to send OTP" });
     }
   } catch (error) {
     console.log(error);
