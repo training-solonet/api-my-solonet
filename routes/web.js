@@ -14,7 +14,7 @@ router.get("/users", getUser);
 router.post("/register", register);
 router.post("/login", login);
 router.post("/send-otp", sendOtp);
-router.post("verify-otp", verifyOtp);
+router.post("/verify-otp", verifyOtp);
 router.put("/updateUser/:id", updateUser);
 
 // Product

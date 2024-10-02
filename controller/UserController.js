@@ -51,7 +51,47 @@ export const register = async (req, res) => {
       verified: false
     })
 
-    await sendOtp(phone_number, otp);
+
+    await axios.post('https://omnichannel.qiscus.com/whatsapp/v1/' + process.env.QISCUS_APP_ID + '/' + process.env.WA_CHANNEL_ID + '/messages', {
+      to: phone_number,
+      type: "template",
+      template: {
+        namespace: process.env.WA_TEMPLATE_NAMESPACE,
+        name: process.env.WA_TEMPLATE_NAME,
+        language: {
+          policy: "deterministic",
+          code: "id"
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: otp
+              }
+            ]
+          },
+          {
+            type: "button",
+            sub_type: "url",
+            index: "0",
+            parameters: [
+              {
+                type: "text",
+                text: otp
+              }
+            ]
+          }
+        ]
+      }
+    }, {
+      headers: {
+        'Qiscus-App-Id': process.env.QISCUS_APP_ID,
+        'Qiscus-Secret-Key': process.env.QISCUS_SECRET_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
 
     return res.status(201).json({ message: "User created successfully. Please verify your number" });
   } catch (error) {
@@ -203,7 +243,9 @@ export const updateUser = async (req, res) => {
 };
 
 export const sendOtp = async (req, res) => {
-  const { phone_number, otp } = req.body;  // Get data from the request body
+  console.log("Request body:", req.body);
+
+  const { phone_number, otp } = req.body
 
   try {
     const response = await axios.post('https://omnichannel.qiscus.com/whatsapp/v1/' + process.env.QISCUS_APP_ID + '/' + process.env.WA_CHANNEL_ID + '/messages', {
