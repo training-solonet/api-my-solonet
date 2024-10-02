@@ -131,10 +131,10 @@ export const registerGoogle = async (profile) => {
 };
 
 export const login = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { email, password } = req.body;
 
   try {
-    const user = await User.findOne({ where: { email, name } });
+    const user = await User.findOne({ where: { email } });
 
     if (!user) {
       return res.status(404).json({ message: "Invalid credentials" });
@@ -242,9 +242,106 @@ export const updateUser = async (req, res) => {
   }
 };
 
-export const sendOtp = async (req, res) => {
-  console.log("Request body:", req.body);
+export const resetPasswordRequest = async (req, res) => {
+  const { phone_number } = req.body;
 
+  try {
+    const user = await User.findOne({ where: { phone_number } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    user.otp = otp;
+    user.otp_expiry = moment().add(15, 'minutes').toDate();
+    await user.save();
+
+    await axios.post('https://omnichannel.qiscus.com/whatsapp/v1/' + process.env.QISCUS_APP_ID + '/' + process.env.WA_CHANNEL_ID + '/messages', {
+      to: phone_number,
+      type: "template",
+      template: {
+        namespace: process.env.WA_TEMPLATE_NAMESPACE,
+        name: process.env.WA_TEMPLATE_NAME,
+        language: {
+          policy: "deterministic",
+          code: "id"
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: otp
+              }
+            ]
+          },
+          {
+            type: "button",
+            sub_type: "url",
+            index: "0",
+            parameters: [
+              {
+                type: "text",
+                text: otp
+              }
+            ]
+          }
+        ]
+      }
+    }, {
+      headers: {
+        'Qiscus-App-Id': process.env.QISCUS_APP_ID,
+        'Qiscus-Secret-Key': process.env.QISCUS_SECRET_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return res.status(200).json({ message: "OTP sent" });
+  } catch (error) {
+    
+  }
+}
+
+export const resetPassword = async (req, res) => {
+  const { phone_number, otp, new_password, confirm_new_password } = req.body;
+
+  if (new_password.length <= 6) {
+    return res
+      .status(400)
+      .json({ message: "New password must be at least 6 characters" });
+  }
+
+  if (new_password !== confirm_new_password) {
+    return res.status(400).json({ message: "Passwords do not match" });
+  }
+
+  try {
+    const user = await User.findOne({ where: { phone_number } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.otp === otp && moment().isBefore(user.otp_expires)) {
+      const salt = await bcrypt.genSalt(10);
+      
+      user.password = await bcrypt.hash(new_password, salt);
+      user.otp = null;
+      user.otp_expires = null;
+      await user.save();
+
+      return res.status(200).json({ message: "Password has been reset successfully." });
+    } else {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export const sendOtp = async (req, res) => {
   const { phone_number, otp } = req.body
 
   try {
@@ -320,6 +417,7 @@ export const verifyOtp = async (req, res) => {
 
     user.verified = true;
     user.otp = null;
+    user.otp_expiry = null;
     await user.save();
 
     return res.status(200).json({ message: "Phone number verified" });
