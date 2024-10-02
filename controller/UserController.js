@@ -215,29 +215,63 @@ export const updateUser = async (req, res) => {
   }
 };
 
-export const verifyOtp = async (req, res) => {
-  const { phone_number, otp } = req.body;
+export const sendOtp = async (req, res) => {
+  const { phone_number, otp } = req.body;  // Get data from the request body
 
   try {
-    const user = await User.findOne({ where: { phone_number } });
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (user.otp === otp && moment().isBefore(user.otp_expires)) {
-      user.verified = true;
-      user.otp = null;
-      user.otp_expires = null;
-      await user.save();
-
-      return res.status(200).json({ message: "Phone number verified" });
-    } else {
-      return res.status(400).json({ message: "Invalid OTP" });
-    }
+    const response = await axios.post('https://omnichannel.qiscus.com/whatsapp/v1/' + process.env.QISCUS_APP_ID + '/' + process.env.WA_CHANNEL_ID + '/messages', {
+      to: phone_number,
+      type: "template",
+      template: {
+        namespace: process.env.WA_TEMPLATE_NAMESPACE,
+        name: process.env.WA_TEMPLATE_NAME,
+        language: {
+          policy: "deterministic",
+          code: "id"
+        },
+        components: [
+          {
+            type: "body",
+            parameters: [
+              {
+                type: "text",
+                text: otp
+              }
+            ]
+          },
+          {
+            type: "button",
+            sub_type: "url",
+            index: "0",
+            parameters: [
+              {
+                type: "text",
+                text: otp
+              }
+            ]
+          }
+        ]
+      }
+    }, {
+      headers: {
+        'Qiscus-App-Id': process.env.QISCUS_APP_ID,
+        'Qiscus-Secret-Key': process.env.QISCUS_SECRET_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+    // Send the response back to the client
+    res.json({
+      success: true,
+      message: 'OTP sent successfully',
+      data: response.data
+    });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error('Error sending message:', error.response?.data || error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Error sending message',
+      error: error.response?.data || error.message
+    });
   }
 };
 
