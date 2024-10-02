@@ -37,7 +37,7 @@ export const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const otp = crypto.randomInt(100000, 999999).toString();
+    const otp = Math.floor(100000 + Math.random() * 900000);
     const otpExpiry = moment().add(5, 'minutes').toDate();
 
     await User.create({
