@@ -40,7 +40,7 @@ export const register = async (req, res) => {
     const otp = crypto.randomInt(100000, 999999).toString();
     const otpExpiry = moment().add(5, 'minutes').toDate();
 
-    const user = await User.create({
+    await User.create({
       name, 
       phone_number,
       email,
