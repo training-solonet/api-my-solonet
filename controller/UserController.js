@@ -46,7 +46,7 @@ export const register = async (req, res) => {
       email,
       alamat,
       password: hashedPassword,
-      otp,
+      otp: otp,
       otp_expiry: otpExpiry,
       verified: false
     })
