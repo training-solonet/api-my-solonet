@@ -23,15 +23,68 @@ export const register = async (req, res) => {
 
   try {
     const existingEmail = await User.findOne({ where: { email } });
-    if (existingEmail) {
-      return res.status(400).json({ message: "Email is already in use" });
+    if (existingEmail && existingEmail.verified) {
+      return res.status(400).json({ message: "Email is already in use and verified" });
     }
 
     const existingPhoneNumber = await User.findOne({ where: { phone_number } });
-    if (existingPhoneNumber) {
-      return res
-        .status(400)
-        .json({ message: "Phone number is already in use" });
+    if (existingPhoneNumber && existingPhoneNumber.verified) {
+      return res.status(400).json({ message: "Phone number is already in use and verified" });
+    }
+
+    if (existingEmail || existingPhoneNumber) {
+      const user = existingEmail || existingPhoneNumber;
+
+      const otp = crypto.randomInt(100000, 999999).toString();
+      const otpExpiry = moment().add(5, 'minutes').toDate();
+
+      await user.update({
+        otp: otp,
+        otp_expiry: otpExpiry,
+      });
+
+      await axios.post('https://omnichannel.qiscus.com/whatsapp/v1/' + process.env.QISCUS_APP_ID + '/' + process.env.WA_CHANNEL_ID + '/messages', {
+        to: phone_number,
+        type: "template",
+        template: {
+          namespace: process.env.WA_TEMPLATE_NAMESPACE,
+          name: process.env.WA_TEMPLATE_NAME,
+          language: {
+            policy: "deterministic",
+            code: "id"
+          },
+          components: [
+            {
+              type: "body",
+              parameters: [
+                {
+                  type: "text",
+                  text: otp
+                }
+              ]
+            },
+            {
+              type: "button",
+              sub_type: "url",
+              index: "0",
+              parameters: [
+                {
+                  type: "text",
+                  text: otp
+                }
+              ]
+            }
+          ]
+        }
+      }, {
+        headers: {
+          'Qiscus-App-Id': process.env.QISCUS_APP_ID,
+          'Qiscus-Secret-Key': process.env.QISCUS_SECRET_KEY,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      return res.status(200).json({ message: "OTP resent. Please verify your number." });
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -48,9 +101,8 @@ export const register = async (req, res) => {
       password: hashedPassword,
       otp: otp,
       otp_expiry: otpExpiry,
-      verified: false
-    })
-
+      verified: false,
+    });
 
     await axios.post('https://omnichannel.qiscus.com/whatsapp/v1/' + process.env.QISCUS_APP_ID + '/' + process.env.WA_CHANNEL_ID + '/messages', {
       to: phone_number,
@@ -65,17 +117,6 @@ export const register = async (req, res) => {
         components: [
           {
             type: "body",
-            parameters: [
-              {
-                type: "text",
-                text: otp
-              }
-            ]
-          },
-          {
-            type: "button",
-            sub_type: "url",
-            index: "0",
             parameters: [
               {
                 type: "text",
@@ -99,6 +140,7 @@ export const register = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 export const registerGoogle = async (profile) => {
   try {
@@ -253,7 +295,8 @@ export const resetPasswordRequest = async (req, res) => {
 
     const otp = crypto.randomInt(100000, 999999).toString();
     user.otp = otp;
-    user.otp_expiry = moment().add(15, 'minutes').toDate();
+    user.otp_expiry = moment().add(5, 'minutes').toDate();
+    user.verified = false;
     await user.save();
 
     await axios.post('https://omnichannel.qiscus.com/whatsapp/v1/' + process.env.QISCUS_APP_ID + '/' + process.env.WA_CHANNEL_ID + '/messages', {
@@ -323,18 +366,26 @@ export const resetPassword = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (user.otp === otp && moment().isBefore(user.otp_expires)) {
-      const salt = await bcrypt.genSalt(10);
-      
-      user.password = await bcrypt.hash(new_password, salt);
+    if (moment().isAfter(user.otp_expiry)) {
       user.otp = null;
-      user.otp_expires = null;
+      user.otp_expiry = null;
       await user.save();
 
-      return res.status(200).json({ message: "Password has been reset successfully." });
-    } else {
+      return res.status(400).json({ message: "OTP has expired" });
+    }
+
+    if (user.otp.trim() !== otp.trim()) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
+
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(new_password, salt);
+    user.otp = null;
+    user.otp_expiry = null;
+    user.verified = true;
+    await user.save();
+
+    return res.status(200).json({ message: "Password has been reset successfully." });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal server error" });
@@ -345,6 +396,13 @@ export const sendOtp = async (req, res) => {
   const { phone_number, otp } = req.body
 
   try {
+    const user = await User.findOne({ where: { phone_number } });
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    user.otp = otp;
+    user.otp_expiry = moment().add(5, 'minutes').toDate();
+    await user.save();
+
     const response = await axios.post('https://omnichannel.qiscus.com/whatsapp/v1/' + process.env.QISCUS_APP_ID + '/' + process.env.WA_CHANNEL_ID + '/messages', {
       to: phone_number,
       type: "template",
@@ -409,6 +467,13 @@ export const verifyOtp = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    if (moment().isAfter(user.otp_expiry)) {
+      user.otp = null;
+      user.otp_expiry = null;
+      await user.save();
+      return res.status(400).json({ message: "OTP has expired" });
     }
 
     if (user.otp !== otp) {
