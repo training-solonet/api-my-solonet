@@ -10,6 +10,11 @@ const User = db.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    nik: {
+      type: DataTypes.INTEGER,
+      unique: true,
+      allowNull: true,
+    },
     phone_number: {
       type: DataTypes.STRING,
       allowNull: true,
