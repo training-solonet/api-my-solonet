@@ -123,6 +123,17 @@ export const register = async (req, res) => {
                 text: otp
               }
             ]
+          },
+          {
+            type: "button",
+            sub_type: "url",
+            index: "0",
+            parameters: [
+              {
+                type: "text",
+                text: otp
+              }
+            ]
           }
         ]
       }
@@ -137,7 +148,7 @@ export const register = async (req, res) => {
     return res.status(201).json({ message: "User created successfully. Please verify your number" });
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(400).json({ message: "Internal server error" });
   }
 };
 
