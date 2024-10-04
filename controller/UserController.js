@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import axios from "axios";
 import moment from "moment";
 import crypto from "crypto";
+import jwt from 'jsonwebtoken'; 
 
 dotenv.config();
 
@@ -202,9 +203,9 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Incorrect Password" });
     }
 
-    return res
-      .status(200)
-      .json({ message: "Login successful ", user: user.email });
+    const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    return res.status(200).json({ message: "Login successful", user: user.email, token });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal server error" });

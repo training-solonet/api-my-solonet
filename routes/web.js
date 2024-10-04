@@ -6,11 +6,12 @@ import { getPromo } from '../controller/PromoController.js';
 import { kategori }  from '../controller/kategoriController.js';
 import { login, register, getUser, updateUser, sendOtp, verifyOtp, resetPasswordRequest, resetPassword } from "../controller/UserController.js";
 import { getPembelian } from "../controller/PembelianController.js";
+import { authenticateJWT } from "./middleware/auth.js";
 
 const router = express.Router();
 
 // User
-router.get("/users", getUser);
+router.get("/users", authenticateJWT, getUser);
 router.post("/register", register);
 router.post("/login", login);
 router.post("/send-otp", sendOtp);
@@ -20,7 +21,7 @@ router.post("/reset-password", resetPassword);
 router.put("/updateUser/:id", updateUser);
 
 // Product
-router.get("/product", product);
+router.get("/product", authenticateJWT, product);
 router.get("/kategori", kategori);
 router.get("/product-promo", getPromo);
 router.get("/product/:id", productById );
