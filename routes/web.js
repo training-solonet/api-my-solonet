@@ -6,27 +6,28 @@ import { getPromo } from '../controller/PromoController.js';
 import { kategori }  from '../controller/kategoriController.js';
 import { login, register, getUser, updateUser, sendOtp, verifyOtp, resetPasswordRequest, resetPassword } from "../controller/UserController.js";
 import { getPembelian } from "../controller/PembelianController.js";
+import { verifyToken } from "./middleware/middleware.js";
 
 const router = express.Router();
 
 // User
-router.get("/users", getUser);
+router.get("/users", verifyToken,getUser);
 router.post("/register", register);
 router.post("/login", login);
 router.post("/send-otp", sendOtp);
 router.post("/verify-otp", verifyOtp);
 router.post("/request-otp", resetPasswordRequest);
 router.post("/reset-password", resetPassword);
-router.put("/updateUser/:id", updateUser);
+router.put("/updateUser/:id", verifyToken, updateUser);
 
 // Product
-router.get("/product", product);
-router.get("/kategori", kategori);
-router.get("/product-promo", getPromo);
-router.get("/product/:id", productById );
+router.get("/product", verifyToken, product);
+router.get("/kategori", verifyToken, kategori);
+router.get("/product-promo", verifyToken, getPromo);
+router.get("/product/:id", verifyToken, productById );
 
 // Pembelian
-router.get("/pembelian", getPembelian);
+router.get("/pembelian", verifyToken ,getPembelian);
 
 //google auth
 router.get('/auth/google', passport.authenticate('google', {
