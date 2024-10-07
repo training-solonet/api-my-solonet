@@ -1,10 +1,10 @@
 import db from "../config/Database.js"; 
-import Product from "../controller/ProductController.js"; 
+import Product from "./Product.js";
 import { Sequelize } from "sequelize";
 
 const { DataTypes } = Sequelize;
 
-const customer = db.define(
+const Customer = db.define(
   "customer",
   {
     user_id: DataTypes.INTEGER,
@@ -25,9 +25,9 @@ const customer = db.define(
   }
 );
 
-Product.hasMany(customer, {
+Product.hasMany(Customer, {
   foreignKey: "product_id",
   as: "customers",
 });
 
-export default customer;
+export default Customer;
