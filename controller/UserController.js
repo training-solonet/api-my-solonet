@@ -6,6 +6,7 @@ import moment from "moment";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import cron from "node-cron";
+import { Op } from "sequelize";
 
 dotenv.config();
 
@@ -264,13 +265,14 @@ export const loginGoogle = async (profile) => {
 };
 
 export const getUser = async (req, res) => {
-  try {
-    const response = await User.findAll();
-    res.status(200).json(response);
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
+  const userId =req.user.id;
+
+  User.findByPk(userId).then(user => {
+    if (!user) {
+      res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  }).catch(err => res.status(500).json({ message: "Internal server error" }));
 };
 
 export const getUserById = async (req, res) => {
