@@ -1,0 +1,12 @@
+import Customer from "../models/customer";
+
+
+export const Customer = async (req, res) => {
+    try {
+      const response = await Customer.findAll();
+      res.status(200).json(response);
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "Internal server error" });
+    }
+  };

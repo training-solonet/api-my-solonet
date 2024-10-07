@@ -16,7 +16,7 @@ const reg_districts = db.define(
   }
 );
 
-Product.hasMany(reg_regencies, {
+reg_districts.hasMany(reg_regencies, {
     foreignKey: "regency_id",
     as: "kabupaten",
 });
