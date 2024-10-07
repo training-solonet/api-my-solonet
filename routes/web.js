@@ -4,7 +4,7 @@ import passport from "passport";
 import { product, productById } from '../controller/ProductController.js';
 import { getPromo } from '../controller/PromoController.js';
 import { kategori }  from '../controller/kategoriController.js';
-import { login, register, getUser, updateUser, sendOtp, verifyOtp, resetPasswordRequest, resetPassword } from "../controller/UserController.js";
+import { login, register, getUser, getUserById, updateUser, sendOtp, verifyOtp, resetPasswordRequest, resetPassword } from "../controller/UserController.js";
 import { getPembelian } from "../controller/PembelianController.js";
 import { verifyToken } from "./middleware/middleware.js";
 
@@ -12,6 +12,7 @@ const router = express.Router();
 
 // User
 router.get("/users", verifyToken,getUser);
+router.get("/users/:id", verifyToken, getUserById);
 router.post("/register", register);
 router.post("/login", login);
 router.post("/send-otp", sendOtp);
@@ -35,7 +36,7 @@ router.get('/auth/google', passport.authenticate('google', {
 }));
 
 router.get('/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/register' }),
+    passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
         res.redirect('/product');  
     }
