@@ -39,6 +39,9 @@ const User = db.define(
     otp: {
       type: DataTypes.INTEGER,
     },
+    otp_expiry: {
+      type: DataTypes.DATE,
+    },
     verified: {
       type: DataTypes.BOOLEAN,
     },
