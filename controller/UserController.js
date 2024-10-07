@@ -211,7 +211,7 @@ export const registerGoogle = async (profile) => {
 };
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { name, email, password } = req.body;
 
   try {
     const user = await User.findOne({ where: { email } });
@@ -230,7 +230,7 @@ export const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email },
+      { id: user.id, nama:user.name, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: 86400 }
     );
@@ -239,7 +239,7 @@ export const login = async (req, res) => {
       .status(200)
       .json({ 
         message: "Login successful ",
-        user: { id:user.id ,email: user.email }, 
+        user: { id:user.id, nama:user.name ,email: user.email }, 
         token: token,
       });
   } catch (error) {
