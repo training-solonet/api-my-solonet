@@ -10,7 +10,7 @@ import cron from "node-cron";
 dotenv.config();
 
 export const register = async (req, res) => {
-  const { name, phone_number, email, alamat, password, confirm_password } =
+  const { name, phone_number, email, password, confirm_password } =
     req.body;
 
   if (password.length <= 6) {
@@ -113,7 +113,6 @@ export const register = async (req, res) => {
       name,
       phone_number,
       email,
-      alamat,
       password: hashedPassword,
       otp: otp,
       otp_expiry: otpExpiry,
@@ -275,7 +274,7 @@ export const getUser = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { name, phone_number, email, alamat, password, confirm_password } =
+  const { name, phone_number, email, password, confirm_password } =
     req.body;
 
   if (password && password.length <= 6) {
@@ -317,7 +316,6 @@ export const updateUser = async (req, res) => {
       name: name || user.name,
       email: email || user.email,
       phone_number: phone_number || user.phone_number,
-      alamat: alamat || user.alamat,
       ...(password && { password: await bcrypt.hash(password, 10) }),
     };
 

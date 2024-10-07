@@ -24,10 +24,6 @@ const User = db.define(
       allowNull: true,
       unique: true,
     },
-    alamat: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     password: {
       type: DataTypes.STRING,
       allowNull: true,
