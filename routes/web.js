@@ -7,7 +7,7 @@ import { kategori }  from '../controller/kategoriController.js';
 import { login, register, getUser, getUserById, updateUser, sendOtp, verifyOtp, resetPasswordRequest, resetPassword } from "../controller/UserController.js";
 import { getPembelian } from "../controller/PembelianController.js";
 import { verifyToken } from "./middleware/middleware.js";
-import { getCustomer } from "../controller/customerController.js";
+import { addCustomer, getCustomer } from "../controller/customerController.js";
 
 const router = express.Router();
 
@@ -21,7 +21,10 @@ router.post("/verify-otp", verifyOtp);
 router.post("/request-otp", resetPasswordRequest);
 router.post("/reset-password", resetPassword);
 router.put("/updateUser/:id", verifyToken, updateUser);
-router.get("/customer", getCustomer);
+
+// Customer
+router.get("/customer", verifyToken, getCustomer);
+router.post("/customer", addCustomer);
 
 
 // Product
