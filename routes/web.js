@@ -25,12 +25,11 @@ router.put("/updateUser/:id", verifyToken, updateUser);
 
 // Customer
 router.get("/customer", verifyToken, getCustomer);
-router.post("/customer", addCustomer);
-router.get("/provinsi", getProvinsi);
-router.get("/kabupaten/:provinsi_id", getKabupatenByProvinsi );
-router.get("/kecamatan/:kabupaten_id", getKecamatanByKabupaten );
-router.get("/kelurahan/:kecamatan_id", getKelurahanByKecamatan );
-
+router.post("/customer", verifyToken, addCustomer);
+router.get("/provinsi", verifyToken, getProvinsi);
+router.get("/kabupaten/:provinsi_id", verifyToken, getKabupatenByProvinsi );
+router.get("/kecamatan/:kabupaten_id", verifyToken, getKecamatanByKabupaten );
+router.get("/kelurahan/:kecamatan_id", verifyToken, getKelurahanByKecamatan );
 
 // Product
 router.get("/product", verifyToken, product);
