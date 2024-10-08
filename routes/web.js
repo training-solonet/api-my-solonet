@@ -7,7 +7,8 @@ import { kategori }  from '../controller/kategoriController.js';
 import { login, register, getUser, getUserById, updateUser, sendOtp, verifyOtp, resetPasswordRequest, resetPassword } from "../controller/UserController.js";
 import { getPembelian } from "../controller/PembelianController.js";
 import { verifyToken } from "./middleware/middleware.js";
-import { addCustomer, getCustomer } from "../controller/customerController.js";
+import { addCustomer, getCustomer, getKabupatenByProvinsi, getKecamatanByKabupaten, getKelurahanByKecamatan, getProvinsi } from "../controller/customerController.js";
+
 
 const router = express.Router();
 
@@ -25,6 +26,10 @@ router.put("/updateUser/:id", verifyToken, updateUser);
 // Customer
 router.get("/customer", verifyToken, getCustomer);
 router.post("/customer", addCustomer);
+router.get("/provinsi", getProvinsi);
+router.get("/kabupaten/:provinsi_id", getKabupatenByProvinsi );
+router.get("/kecamatan/:kabupaten_id", getKecamatanByKabupaten );
+router.get("/kelurahan/:kecamatan_id", getKelurahanByKecamatan );
 
 
 // Product

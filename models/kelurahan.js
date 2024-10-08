@@ -7,18 +7,25 @@ const { DataTypes } = Sequelize;
 const reg_villages = db.define(
   "reg_villages",
   {
-    district_id: DataTypes.INTEGER,
-    nama: DataTypes.STRING,
+    district_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: reg_districts,
+        key: 'id' 
+      }
+    },
+    name: DataTypes.STRING
   },
   {
     freezeTableName: true,
-    underscored: true,
+    underscored: true
   }
 );
 
-reg_villages.hasMany(reg_districts, {
-    foreignKey: "village_id",
-    as: "kelurahan",
+reg_villages.belongsTo(reg_districts, {
+  foreignKey: "district_id",
+  as: "kecamatan" 
 });
 
 export default reg_villages;
