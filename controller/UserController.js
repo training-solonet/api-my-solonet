@@ -192,16 +192,13 @@ export const registerGoogle = async (profile) => {
         user.google_id = profile.id;
         await user.save();
         return user;
-      }
-
-      if (!user) {
-        const user = await User.create({
+      } else {
+        user = await User.create({
           google_id: profile.id,
           name: profile.displayName,
           email: profile.emails[0].value,
-          verified: true,
-        });
-        await user.save();
+          verified: false,
+        })
       }
     }
     return user;
