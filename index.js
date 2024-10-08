@@ -41,7 +41,7 @@ passport.use(
         "179217026619-dfhjpdk5njnoktot1hquafijbgkn2s3p.apps.googleusercontent.com",
       clientSecret:
         "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GOCSPX-ySK5gw-iesFTml8GGIG5XdcIAoEj",
-      callbackURL: `https://api.connectis.my.id/auth/google/callback`,
+      callbackURL: `https://api.connectis.my.id/auth/google`,
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
