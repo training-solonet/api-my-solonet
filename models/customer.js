@@ -8,7 +8,7 @@ const Customer = db.define(
   "customer",
   {
     user_id: DataTypes.INTEGER,
-    name: DataTypes.STRING,
+    nama: DataTypes.STRING,
     nik: DataTypes.INTEGER,
     provinsi_id: DataTypes.INTEGER,
     kabupaten_id: DataTypes.INTEGER,
