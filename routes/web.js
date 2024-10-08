@@ -32,7 +32,8 @@ router.get("/kecamatan/:kabupaten_id", verifyToken, getKecamatanByKabupaten );
 router.get("/kelurahan/:kecamatan_id", verifyToken, getKelurahanByKecamatan );
 
 // Product
-router.get("/product", verifyToken, product);
+// router.get("/product", verifyToken, product);
+router.get("/product", product);
 router.get("/kategori", verifyToken, kategori);
 router.get("/product-promo", verifyToken, getPromo);
 router.get("/product/:id", verifyToken, productById );
@@ -48,7 +49,7 @@ router.get('/auth/google', passport.authenticate('google', {
 router.get('/auth/google/callback', 
     passport.authenticate('google', { failureRedirect: '/' }),
     (req, res) => {
-        res.redirect('/');  
+        res.redirect('/product');  
     }
 );
 
