@@ -33,9 +33,9 @@ passport.deserializeUser((user, done) => {
 });
 
 passport.use(new GoogleStrategy({
-  clientID: "318405488848-4o9qr142jal8pstkpvsqkal5h3id2k49.apps.googleusercontent.com",
-  clientSecret: "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",
-  callbackURL: `http://localhost:${port}/auth/google/callback`  
+  clientID: "179217026619-dfhjpdk5njnoktot1hquafijbgkn2s3p.apps.googleusercontent.com",
+  clientSecret: "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GOCSPX-ySK5gw-iesFTml8GGIG5XdcIAoEj",
+  callbackURL: `https://api.connectis.my.id/auth/google/callback`  
 }, async(accessToken, refreshToken, profile, done) => {
   try {
     let user = await loginGoogle(profile);
