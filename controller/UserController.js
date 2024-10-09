@@ -192,16 +192,13 @@ export const registerGoogle = async (profile) => {
         user.google_id = profile.id;
         await user.save();
         return user;
-      }
-
-      if (!user) {
-        const user = await User.create({
+      } else {
+        user = await User.create({
           google_id: profile.id,
           name: profile.displayName,
           email: profile.emails[0].value,
-          verified: true,
-        });
-        await user.save();
+          verified: false,
+        })
       }
     }
     return user;
@@ -257,7 +254,20 @@ export const loginGoogle = async (profile) => {
       return user;
     }
 
-    return null;
+    const token = jwt.sign(
+      { id: user.id, name: user.name, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: 86400 }
+    )
+
+    return {
+      token, 
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      }
+    };
   } catch (error) {
     console.error("Error login google", error);
     return null;
