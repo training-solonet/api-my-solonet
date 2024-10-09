@@ -51,11 +51,15 @@
         (req, res) => {
             const { token, user } = req.user;
  
-            res.status(200).json({
-                message: "Login Success",
-                token,
-                user,
-            })
+            if(user.isNewUser){
+                res.redirect('/')
+            } else{
+                res.status(200).json({
+                    message: "Success",
+                    token,
+                    user,
+                })
+            }
         }
     );
 
