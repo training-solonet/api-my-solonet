@@ -254,7 +254,20 @@ export const loginGoogle = async (profile) => {
       return user;
     }
 
-    return null;
+    const token = jwt.sign(
+      { id: user.id, name: user.name, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: 86400 }
+    )
+
+    return {
+      token, 
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      }
+    };
   } catch (error) {
     console.error("Error login google", error);
     return null;
