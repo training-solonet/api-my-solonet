@@ -183,27 +183,29 @@ export const register = async (req, res) => {
 
 export const registerGoogle = async (profile) => {
   try {
-    let user = await User.findOne({ where: { google_id: profile.id } });
+    const newUser = await User.create({
+      name: profile.displayName,
+      email: profile.emails[0].value,
+      google_id: profile.id,
+    });
 
-    if (!user) {
-      user = await User.findOne({ where: { email: profile.emails[0].value } });
+    const token = jwt.sign(
+      { id: newUser.id, name: newUser.name, email: newUser.email },
+      process.env.JWT_SECRET,
+      { expiresIn: 86400 }
+    );
 
-      if (user) {
-        user.google_id = profile.id;
-        await user.save();
-        return user;
-      } else {
-        user = await User.create({
-          google_id: profile.id,
-          name: profile.displayName,
-          email: profile.emails[0].value,
-          verified: false,
-        })
-      }
-    }
-    return user;
+    return {
+      token,
+      user: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        isNewUser: true,
+      },
+    };
   } catch (error) {
-    console.error("Error register google", error);
+    console.error("Error registering Google user:", error);
     return null;
   }
 };
@@ -251,6 +253,15 @@ export const loginGoogle = async (profile) => {
     const user = await User.findOne({ where: { google_id: profile.id } });
 
     if (!user) {
+      user = await User.findOne({ where: { email: profile.emails[0].value } });
+      
+      if (user && !user.google_id) {
+        user.google_id = profile.id;
+        await user.save();
+      }
+    }
+
+    if (!user) {
       return user;
     }
 
@@ -266,6 +277,7 @@ export const loginGoogle = async (profile) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        isNewUser: false,
       }
     };
   } catch (error) {
