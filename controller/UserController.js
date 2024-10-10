@@ -11,8 +11,7 @@ import { Op } from "sequelize";
 dotenv.config();
 
 export const register = async (req, res) => {
-  const { name, phone_number, email, password, confirm_password } =
-    req.body;
+  const { name, phone_number, email, password, confirm_password } = req.body;
 
   if (password.length <= 6) {
     return res
@@ -106,10 +105,9 @@ export const register = async (req, res) => {
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    
+
     const otp = Math.floor(100000 + Math.random() * 900000);
     const otpExpiry = moment().add(5, "minutes").toDate();
-    
 
     await User.create({
       name,
@@ -170,11 +168,9 @@ export const register = async (req, res) => {
       }
     );
 
-    return res
-      .status(201)
-      .json({
-        message: "User created successfully. Please verify your number",
-      });
+    return res.status(201).json({
+      message: "User created successfully. Please verify your number",
+    });
   } catch (error) {
     console.log(error);
     return res.status(400).json({ message: "Internal server error" });
@@ -230,18 +226,16 @@ export const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, nama:user.name, email: user.email },
+      { id: user.id, nama: user.name, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: 86400 }
     );
 
-    return res
-      .status(200)
-      .json({ 
-        message: "Login successful ",
-        user: { id:user.id, nama:user.name ,email: user.email }, 
-        token: token,
-      });
+    return res.status(200).json({
+      message: "Login successful ",
+      user: { id: user.id, nama: user.name, email: user.email },
+      token: token,
+    });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal server error" });
@@ -254,7 +248,7 @@ export const loginGoogle = async (profile) => {
 
     if (!user) {
       user = await User.findOne({ where: { email: profile.emails[0].value } });
-      
+
       if (user && !user.google_id) {
         user.google_id = profile.id;
         await user.save();
@@ -269,16 +263,16 @@ export const loginGoogle = async (profile) => {
       { id: user.id, name: user.name, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: 86400 }
-    )
+    );
 
     return {
-      token, 
+      token,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
         isNewUser: false,
-      }
+      },
     };
   } catch (error) {
     console.error("Error login google", error);
@@ -287,18 +281,20 @@ export const loginGoogle = async (profile) => {
 };
 
 export const getUser = async (req, res) => {
-  const userId =req.user.id;
+  const userId = req.user.id;
 
-  User.findByPk(userId).then(user => {
-    if (!user) {
-      res.status(404).json({ message: "User not found" });
-    }
-    res.json(user);
-  }).catch(err => res.status(500).json({ message: "Internal server error" }));
+  User.findByPk(userId)
+    .then((user) => {
+      if (!user) {
+        res.status(404).json({ message: "User not found" });
+      }
+      res.json(user);
+    })
+    .catch((err) => res.status(500).json({ message: "Internal server error" }));
 };
 
 export const getUserById = async (req, res) => {
-  const {id} = req.params;
+  const { id } = req.params;
   try {
     const user = await User.findByPk(id);
     if (!user) {
@@ -312,8 +308,7 @@ export const getUserById = async (req, res) => {
 
 export const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { name, phone_number, email, password, confirm_password } =
-    req.body;
+  const { name, phone_number, email, password, confirm_password } = req.body;
 
   if (password && password.length <= 6) {
     return res
@@ -543,7 +538,6 @@ export const sendOtp = async (req, res) => {
         },
       }
     );
-    // Send the response back to the client
     res.json({
       success: true,
       message: "OTP sent successfully",
@@ -594,6 +588,88 @@ export const verifyOtp = async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+export const addPhoneNumber = async (req, res) => {
+  const { phone_number, email } = req.body;
+
+  try {
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.phone_number = phone_number; 
+    await user.save(); 
+
+    const otp = crypto.randomInt(100000, 999999).toString(); 
+    user.otp = otp; 
+    user.otp_expiry = moment().add(5, "minutes").toDate(); 
+    await user.save(); 
+
+    await axios.post(
+      "https://omnichannel.qiscus.com/whatsapp/v1/" +
+        process.env.QISCUS_APP_ID +
+        "/" +
+        process.env.WA_CHANNEL_ID +
+        "/messages",
+      {
+        to: phone_number,
+        type: "template",
+        template: {
+          namespace: process.env.WA_TEMPLATE_NAMESPACE,
+          name: process.env.WA_TEMPLATE_NAME,
+          language: {
+            policy: "deterministic",
+            code: "id",
+          },
+          components: [
+            {
+              type: "body",
+              parameters: [
+                {
+                  type: "text",
+                  text: otp,
+                },
+              ],
+            },
+            {
+              type: "button",
+              sub_type: "url",
+              index: "0",
+              parameters: [
+                {
+                  type: "text",
+                  text: otp,
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        headers: {
+          "Qiscus-App-Id": process.env.QISCUS_APP_ID,
+          "Qiscus-Secret-Key": process.env.QISCUS_SECRET_KEY,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "OTP sent successfully",
+    });
+  } catch (error) {
+    console.error("Error sending OTP:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error sending message",
+      error: error.message, 
+    });
+  }
+};
+
 
 cron.schedule("*/5 * * * *", async () => {
   try {
