@@ -25,7 +25,7 @@
 
     // Customer
     router.get("/customer", verifyToken, getCustomer);
-    router.post("/customer", verifyToken, addCustomer);
+    router.post("/customer", addCustomer);
     router.get("/provinsi", verifyToken, getProvinsi);
     router.get("/kabupaten/:provinsi_id", verifyToken, getKabupatenByProvinsi );
     router.get("/kecamatan/:kabupaten_id", verifyToken, getKecamatanByKabupaten );
