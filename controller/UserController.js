@@ -7,8 +7,11 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import cron from "node-cron";
 import { Op } from "sequelize";
+import { OAuth2Client } from "google-auth-library";
+import { response } from "express";
 
 dotenv.config();
+const oauthClient = new OAuth2Client();
 
 export const register = async (req, res) => {
   const { name, phone_number, email, password, confirm_password } = req.body;
@@ -670,6 +673,32 @@ export const addPhoneNumber = async (req, res) => {
   }
 };
 
+export const verifyToken = async (req, res) => {
+  const { idToken } = req.body;
+
+  try {
+    const response = await oauthClient.verifyIdToken({
+      idToken,
+      audience: [
+        process.env.FE_Android,
+        process.env.BE_Web,
+      ]
+    })
+    const payload = response.getPayload();
+
+    if (payload) {
+      const { email } = payload;
+
+      const user = await logInOrRegister(email);
+      return res.status(200).json({ message: "Token verified", user });
+    } else {
+      return res.status(400).json({ message: "Invalid token" });
+    }
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
 
 cron.schedule("*/5 * * * *", async () => {
   try {

@@ -40,6 +40,7 @@ router.post("/request-otp", resetPasswordRequest);
 router.post("/reset-password", resetPassword);
 router.put("/updateUser/:id", verifyToken, updateUser);
 router.post("/verify-number", addPhoneNumber);
+router.post("/verify-token", verifyToken);
 
 // Customer
 router.get("/customer", verifyToken, getCustomer);
