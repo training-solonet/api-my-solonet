@@ -15,6 +15,7 @@ import {
   resetPasswordRequest,
   resetPassword,
   addPhoneNumber,
+  verifyTokenG,
 } from "../controller/UserController.js";
 import { getPembelian } from "../controller/PembelianController.js";
 import { verifyToken } from "./middleware/middleware.js";
@@ -40,7 +41,7 @@ router.post("/request-otp", resetPasswordRequest);
 router.post("/reset-password", resetPassword);
 router.put("/updateUser/:id", verifyToken, updateUser);
 router.post("/verify-number", addPhoneNumber);
-router.post("/verify-token", verifyToken);
+router.post("/verify-token", verifyTokenG);
 
 // Customer
 router.get("/customer", verifyToken, getCustomer);
