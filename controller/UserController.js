@@ -689,7 +689,7 @@ export const verifyTokenG = async (req, res) => {
     if (payload) {
       const { email } = payload;
 
-      const user = await login(email);
+      const user = await logInOrRegister(email);
       return res.status(200).json({ message: "Token verified", user });
     } else {
       return res.status(400).json({ message: "Invalid token" });
