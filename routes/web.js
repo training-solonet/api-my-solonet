@@ -40,10 +40,19 @@ router.post("/request-otp", resetPasswordRequest);
 router.post("/reset-password", resetPassword);
 router.put("/updateUser/:id", verifyToken, updateUser);
 router.post("/verify-number", addPhoneNumber);
+router.post("/verify-token", verifyToken);
 
 // Customer
 router.get("/customer", verifyToken, getCustomer);
-router.post("/customer", verifyToken, addCustomer);
+router.post("/customer", addCustomer);
+router.get("/provinsi", verifyToken, getProvinsi);
+router.get("/kabupaten/:provinsi_id", verifyToken, getKabupatenByProvinsi);
+router.get("/kecamatan/:kabupaten_id", verifyToken, getKecamatanByKabupaten);
+router.get("/kelurahan/:kecamatan_id", verifyToken, getKelurahanByKecamatan);
+
+// Customer
+router.get("/customer", verifyToken, getCustomer);
+router.post("/customer", addCustomer);
 router.get("/provinsi", verifyToken, getProvinsi);
 router.get("/kabupaten/:provinsi_id", verifyToken, getKabupatenByProvinsi);
 router.get("/kecamatan/:kabupaten_id", verifyToken, getKecamatanByKabupaten);
@@ -67,23 +76,23 @@ router.get(
   })
 );
 
-router.get('/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/' }),
-    (req, res) => {
-        const { token, user } = req.user;
+router.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/" }),
+  (req, res) => {
+    const { token, user } = req.user;
 
-        if (user.isNewUser) {
-            res.redirect('/verify-number');  
-        } else {
-            res.status(200).json({
-                message: "Success",
-                token,
-                user,
-            });
-        }
+    if (user.isNewUser) {
+      res.redirect("/verify-number");
+    } else {
+      res.status(200).json({
+        message: "Success",
+        token,
+        user,
+      });
     }
+  }
 );
-
 
 router.get("/logout", (req, res) => {
   req.logout(() => {
