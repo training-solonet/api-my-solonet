@@ -673,7 +673,7 @@ export const addPhoneNumber = async (req, res) => {
   }
 };
 
-export const verifyToken = async (req, res) => {
+export const verifyTokenG = async (req, res) => {
   const { idToken } = req.body;
 
   try {
