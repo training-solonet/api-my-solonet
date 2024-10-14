@@ -61,11 +61,66 @@ export const getCustomer = async (req, res) => {
 };
 
 export const addCustomer = async (req, res) => {
-    try {
-        const response = await Customer.create(req.body);
-        res.status(200).json(response);
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Internal server error" });
-    }
-}
+  const { lat, long } = req.body;
+
+  try {
+      const response = await Customer.create(req.body);
+
+      const lati = parseFloat(lat);
+      const lon = parseFloat(long); 
+
+      if (isNaN(lati) || isNaN(long)) {
+          return res.status(400).json({ message: "Invalid latitude or longitude values." });
+      }
+
+      const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lati}&lon=${lon}&format=json`;
+
+      try {
+          const locationResponse = await fetch(geocodeUrl, { timeout: 5000 });
+          const locationData = await locationResponse.json();
+
+          if (locationResponse.ok) {
+              res.status(200).json({
+                  customer: response,
+                  location: locationData.display_name,
+              });
+          } else {
+              res.status(200).json({
+                  customer: response,
+                  location: locationData.error || "Location not found",
+              });
+          }
+      } catch (geocodeError) {
+          console.error('Geocode fetch error:', geocodeError);
+          res.status(200).json({
+              customer: response,
+              location: "Geocoding service unavailable",
+          });
+      }
+
+  } catch (error) {
+      console.log(error);
+      return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+// export const addCustomer = async (req, res) => {
+//   const { latitude, longitude } = req.body;
+
+//     try {
+//         const response = await Customer.create(req.body);
+
+//         const geoCodeUrl = `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`;
+
+//         const location = await fetch(geoCodeUrl);
+//         const locationData = await location.json();
+
+//         return res.status(200).json({
+//           customer: response,
+//           location: locationData,
+//         });
+//     } catch (error) {
+//         console.log(error);
+//         return res.status(500).json({ message: "Internal server error" });
+//     }
+// }
