@@ -10,13 +10,14 @@ import { Op } from "sequelize";
 import { OAuth2Client } from "google-auth-library";
 
 dotenv.config();
+const client = new OAuth2Client()
 
 async function verifyGoogleToken(token) {
   try {
     const ticket = await client.verifyIdToken({
       idToken: token,
       audience:
-        "179217026619-dfhjpdk5njnoktot1hquafijbgkn2s3p.apps.googleusercontent.com",
+        "http://216357245101-3704ig9b328jphh1pv7pqjc2m6r4h5q2.apps.googleusercontent.com",
     });
     const payload = ticket.getPayload();
     return payload;
@@ -297,26 +298,9 @@ export const loginGoogle = async (profile) => {
 };
 
 export const googleSignIn = async (req, res) => {
+  const { token } = req.body;
+  
   try {    
-    const { token } = req.body;
-
-    const verifyGoogleToken = async (idToken) => {
-
-      const client = new OAuth2Client()
-
-      try {
-        const ticket = await client.verifyIdToken({
-          idToken: idToken,
-          audience:
-            "179217026619-dfhjpdk5njnoktot1hquafijbgkn2s3p.apps.googleusercontent.com",
-        });
-        const payload = ticket.getPayload();
-        return payload;
-      } catch (error) {
-        console.error("Error verifying Google token:", error);
-        return null;
-      }
-    };
 
     const payload = await verifyGoogleToken(token);
 
