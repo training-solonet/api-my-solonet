@@ -301,6 +301,9 @@ export const googleSignIn = async (req, res) => {
     const { token } = req.body;
 
     const verifyGoogleToken = async (idToken) => {
+
+      const client = new OAuth2Client()
+
       try {
         const ticket = await client.verifyIdToken({
           idToken: idToken,
