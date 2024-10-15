@@ -5,7 +5,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import cors from "cors";
 import router from "./routes/web.js";
 import dotenv from "dotenv";
-import { registerGoogle } from "./controller/UserController.js";
+import { googleSignIn, loginGoogle, registerGoogle } from "./controller/UserController.js";
 
 dotenv.config();
 
@@ -37,16 +37,17 @@ passport.deserializeUser((user, done) => {
 passport.use(
   new GoogleStrategy(
     {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      clientID: "179217026619-dfhjpdk5njnoktot1hquafijbgkn2s3p.apps.googleusercontent.com",
+      clientSecret: "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",
+      callbackURL: "http://localhost:5000/auth/google/callback",
     },
     async (accessToken, refreshToken, profile, done) => {
-      try {
+    try {
         console.log("Google Profile:", profile);
         console.log("Access Token:", accessToken);
 
 
+        let user = await loginGoogle(profile);
 
         if (!user) {
           user = await registerGoogle(profile);

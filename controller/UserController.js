@@ -11,13 +11,12 @@ import { OAuth2Client } from "google-auth-library";
 
 dotenv.config();
 
-const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
 async function verifyGoogleToken(token) {
   try {
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience:
+        "179217026619-dfhjpdk5njnoktot1hquafijbgkn2s3p.apps.googleusercontent.com",
     });
     const payload = ticket.getPayload();
     return payload;
@@ -259,52 +258,72 @@ export const login = async (req, res) => {
   }
 };
 
-// export const loginGoogle = async (profile) => {
-//   try {
-//     const user = await User.findOne({ where: { google_id: profile.id } });
+export const loginGoogle = async (profile) => {
+  try {
+    const user = await User.findOne({ where: { google_id: profile.id } });
 
-//     if (!user) {
-//       user = await User.findOne({ where: { email: profile.emails[0].value } });
+    if (!user) {
+      user = await User.findOne({ where: { email: profile.emails[0].value } });
 
-//       if (user && !user.google_id) {
-//         user.google_id = profile.id;
-//         await user.save();
-//       }
-//     }
+      if (user && !user.google_id) {
+        user.google_id = profile.id;
+        await user.save();
+      }
+    }
 
-//     if (!user) {
-//       return user;
-//     }
+    if (!user) {
+      return user;
+    }
 
-//     const token = jwt.sign(
-//       { id: user.id, name: user.name, email: user.email },
-//       process.env.JWT_SECRET,
-//       { expiresIn: 86400 }
-//     );
+    const token = jwt.sign(
+      { id: user.id, name: user.name, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: 86400 }
+    );
 
-//     return {
-//       token,
-//       user: {
-//         id: user.id,
-//         name: user.name,
-//         email: user.email,
-//         isNewUser: false,
-//       },
-//     };
-//   } catch (error) {
-//     console.error("Error login google", error);
-//     return null;
-//   }
-// };
+    return {
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        isNewUser: false,
+      },
+    };
+  } catch (error) {
+    console.error("Error login google", error);
+    return null;
+  }
+};
 
 export const googleSignIn = async (req, res) => {
-  const { token } = req.body;
+  try {    
+    const { token } = req.body;
 
-  try {
+    const verifyGoogleToken = async (idToken) => {
+
+      const client = new OAuth2Client()
+
+      try {
+        const ticket = await client.verifyIdToken({
+          idToken: idToken,
+          audience:
+            "179217026619-dfhjpdk5njnoktot1hquafijbgkn2s3p.apps.googleusercontent.com",
+        });
+        const payload = ticket.getPayload();
+        return payload;
+      } catch (error) {
+        console.error("Error verifying Google token:", error);
+        return null;
+      }
+    };
+
     const payload = await verifyGoogleToken(token);
 
     if (!payload) {
-      return res.status(400).json({ message: "Invalid token" });
+      return res.status(400).json({
+        error: "Invalid Google token",
+      });
     }
 
     let user = await User.findOne({ where: { google_id: payload.sub } });
@@ -315,7 +334,7 @@ export const googleSignIn = async (req, res) => {
         email: payload.email,
         google_id: payload.sub,
         verified: true,
-      })
+      });
     } else if (!user.google_id) {
       user.google_id = payload.sub;
       await user.save();
@@ -334,12 +353,12 @@ export const googleSignIn = async (req, res) => {
         name: user.name,
         email: user.email,
       },
-    })
+    });
   } catch (error) {
     console.error("Error signing in with Google:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
-}
+};
 
 export const getUser = async (req, res) => {
   const userId = req.user.id;
