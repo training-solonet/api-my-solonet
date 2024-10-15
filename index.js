@@ -5,7 +5,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import cors from "cors";
 import router from "./routes/web.js";
 import dotenv from "dotenv";
-import { loginGoogle, registerGoogle } from "./controller/UserController.js";
+import { registerGoogle } from "./controller/UserController.js";
 
 dotenv.config();
 
@@ -46,7 +46,7 @@ passport.use(
         console.log("Google Profile:", profile);
         console.log("Access Token:", accessToken);
 
-        let user = await loginGoogle(profile);
+
 
         if (!user) {
           user = await registerGoogle(profile);
