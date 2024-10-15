@@ -8,10 +8,24 @@ import jwt from "jsonwebtoken";
 import cron from "node-cron";
 import { Op } from "sequelize";
 import { OAuth2Client } from "google-auth-library";
-import { response } from "express";
 
 dotenv.config();
-const oauthClient = new OAuth2Client();
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+async function verifyGoogleToken(token) {
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    return payload;
+  } catch (error) {
+    console.error("Error verifying Google token:", error);
+    return null;
+  }
+}
 
 export const register = async (req, res) => {
   const { name, phone_number, email, password, confirm_password } = req.body;
@@ -245,43 +259,87 @@ export const login = async (req, res) => {
   }
 };
 
-export const loginGoogle = async (profile) => {
+// export const loginGoogle = async (profile) => {
+//   try {
+//     const user = await User.findOne({ where: { google_id: profile.id } });
+
+//     if (!user) {
+//       user = await User.findOne({ where: { email: profile.emails[0].value } });
+
+//       if (user && !user.google_id) {
+//         user.google_id = profile.id;
+//         await user.save();
+//       }
+//     }
+
+//     if (!user) {
+//       return user;
+//     }
+
+//     const token = jwt.sign(
+//       { id: user.id, name: user.name, email: user.email },
+//       process.env.JWT_SECRET,
+//       { expiresIn: 86400 }
+//     );
+
+//     return {
+//       token,
+//       user: {
+//         id: user.id,
+//         name: user.name,
+//         email: user.email,
+//         isNewUser: false,
+//       },
+//     };
+//   } catch (error) {
+//     console.error("Error login google", error);
+//     return null;
+//   }
+// };
+
+export const googleSignIn = async (req, res) => {
+  const { token } = req.body;
+
   try {
-    const user = await User.findOne({ where: { google_id: profile.id } });
+    const payload = await verifyGoogleToken(token);
 
-    if (!user) {
-      user = await User.findOne({ where: { email: profile.emails[0].value } });
-
-      if (user && !user.google_id) {
-        user.google_id = profile.id;
-        await user.save();
-      }
+    if (!payload) {
+      return res.status(400).json({ message: "Invalid token" });
     }
 
+    let user = await User.findOne({ where: { google_id: payload.sub } });
+
     if (!user) {
-      return user;
+      user = await User.create({
+        name: payload.name,
+        email: payload.email,
+        google_id: payload.sub,
+        verified: true,
+      })
+    } else if (!user.google_id) {
+      user.google_id = payload.sub;
+      await user.save();
     }
 
-    const token = jwt.sign(
+    const jwtToken = jwt.sign(
       { id: user.id, name: user.name, email: user.email },
       process.env.JWT_SECRET,
       { expiresIn: 86400 }
     );
 
-    return {
-      token,
+    return res.status(200).json({
+      token: jwtToken,
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        isNewUser: false,
       },
-    };
+    })
   } catch (error) {
-    console.error("Error login google", error);
-    return null;
+    console.error("Error signing in with Google:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
-};
+}
 
 export const getUser = async (req, res) => {
   const userId = req.user.id;
@@ -602,13 +660,13 @@ export const addPhoneNumber = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    user.phone_number = phone_number; 
-    await user.save(); 
+    user.phone_number = phone_number;
+    await user.save();
 
-    const otp = crypto.randomInt(100000, 999999).toString(); 
-    user.otp = otp; 
-    user.otp_expiry = moment().add(5, "minutes").toDate(); 
-    await user.save(); 
+    const otp = crypto.randomInt(100000, 999999).toString();
+    user.otp = otp;
+    user.otp_expiry = moment().add(5, "minutes").toDate();
+    await user.save();
 
     await axios.post(
       "https://omnichannel.qiscus.com/whatsapp/v1/" +
@@ -668,39 +726,10 @@ export const addPhoneNumber = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Error sending message",
-      error: error.message, 
+      error: error.message,
     });
   }
 };
-
-export const verifyTokenG = async (req, res) => {
-  const { idToken } = req.body;
-
-  try {
-    const response = await oauthClient.verifyIdToken({
-      idToken,
-      audience: [
-        process.env.FE_Android,
-        process.env.BE_Web,
-      ]
-    })
-    const payload = response.getPayload();
-
-    if (payload) {
-      const { email } = payload;
-
-      const user = await logInOrRegister(email);
-      return res.status(200).json({ message: "Token verified", user });
-    } else {
-      return res.status(400).json({ message: "Invalid token" });
-    }
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ 
-        error: error.message   
-    });
-  }
-}
 
 cron.schedule("*/5 * * * *", async () => {
   try {
