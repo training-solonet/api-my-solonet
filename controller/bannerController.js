@@ -6,7 +6,13 @@ export const banner = async (req, res) => {
             attributes: ["judul", "deskripsi", "gambar"],
         });
 
-        const updateBanner = banner.map(item => ({
+        const formatedBanner = banner.map(banner => ({
+            judul: banner.judul,
+            deskripsi: banner.deskripsi,
+            gambar: banner.gambar
+        }))
+
+        const updateBanner = formatedBanner.map(item => ({
             ...item,
             gambar: `http://localhost:5000/images/banner/${item.gambar}`
         }))
