@@ -15,6 +15,8 @@ const port = process.env.PORT;
 app.use(cors());
 app.use(e.json());
 
+app.use('/images', e.static('images'));
+
 app.use(
   session({ 
     secret: "bIlN0pbm4S",

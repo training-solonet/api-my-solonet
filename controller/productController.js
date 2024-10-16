@@ -22,8 +22,13 @@ export const paket = async (req, res) => {
             syarat_dan_ketentuan: JSON.parse(product.syarat_ketentuan) 
         }));
 
+        const updateProduct = formattedProduct.map(item => ({
+            ...item,
+            gambar: `http://localhost:5000/images/paket/${item.gambar}`
+        }))
+
         res.status(200).json({
-            products: formattedProduct
+            products: updateProduct
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
