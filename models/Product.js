@@ -1,7 +1,5 @@
 import { Sequelize } from "sequelize";
 import db from "../config/Database.js";
-import Promo from "./Promo.js";
-import Det_product from "./Det_product.js";
 
 const { DataTypes } = Sequelize;
 
@@ -22,15 +20,5 @@ const Product = db.define(
     underscored: true,
   } 
 );
-
-Product.hasMany(Det_product, {
-  foreignKey: "id_product",
-  as: "detail_product",
-});
-
-Product.hasMany(Promo, {
-  foreignKey: "id_product",
-  as: "promo",
-});
 
 export default Product;

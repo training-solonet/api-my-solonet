@@ -1,9 +1,5 @@
 import express from "express";
 import passport from "passport";
-
-import { product, productById } from "../controller/ProductController.js";
-import { getPromo } from "../controller/PromoController.js";
-import { kategori } from "../controller/kategoriController.js";
 import {
   login,
   register,
@@ -17,7 +13,6 @@ import {
   addPhoneNumber,
   googleSignIn,
 } from "../controller/UserController.js";
-import { getPembelian } from "../controller/PembelianController.js";
 import { verifyToken } from "./middleware/middleware.js";
 import {
   addCustomer,
@@ -59,15 +54,7 @@ router.get("/kabupaten/:provinsi_id", verifyToken, getKabupatenByProvinsi);
 router.get("/kecamatan/:kabupaten_id", verifyToken, getKecamatanByKabupaten);
 router.get("/kelurahan/:kecamatan_id", verifyToken, getKelurahanByKecamatan);
 
-// Product
-// router.get("/product", verifyToken, product);
-router.get("/product", product);
-router.get("/kategori", verifyToken, kategori);
-router.get("/product-promo", verifyToken, getPromo);
-router.get("/product/:id", verifyToken, productById);
 
-// Pembelian
-router.get("/pembelian", verifyToken, getPembelian);
 
 //google auth
 router.get(
