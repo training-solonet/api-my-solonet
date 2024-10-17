@@ -15,9 +15,13 @@ export const tagihanUser = async (req, res) => {
 }
 
 cron.schedule("*/15 0 1 * *", async () => {
+    const currentDate = new Date().toISOString().slice(0, 10);
     try {
       await Tagihan.update(
-        { status_pembayaran: "0" }, 
+        { 
+            status_pembayaran: "0",
+            bulan: currentDate
+         }, 
         {
           where: {}, 
         }
