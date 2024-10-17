@@ -24,6 +24,7 @@ import {
 } from "../controller/customerController.js";
 import { banner } from "../controller/bannerController.js";
 import { paket } from "../controller/productController.js";
+import { tagihanUser } from "../controller/tagihanController.js";
 
 
 const router = express.Router();
@@ -51,6 +52,7 @@ router.get("/kelurahan/:kecamatan_id", verifyToken, getKelurahanByKecamatan);
 
 // Product
 router.get("/paket", paket);
+router.get("/tagihan-user", verifyToken, tagihanUser);
 
 // Banner
 router.get("/banner", banner);
