@@ -22,8 +22,9 @@ import {
   getKelurahanByKecamatan,
   getProvinsi,
 } from "../controller/customerController.js";
-import { paket } from "../controller/ProductController.js";
 import { banner } from "../controller/bannerController.js";
+import { paket } from "../controller/ProductController.js";
+
 
 const router = express.Router();
 
