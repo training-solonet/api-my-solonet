@@ -26,7 +26,6 @@ import { banner } from "../controller/bannerController.js";
 import { paket } from "../controller/productController.js";
 import { tagihanUser } from "../controller/tagihanController.js";
 
-
 const router = express.Router();
 
 // User
@@ -46,9 +45,9 @@ router.post("/google", googleSignIn);
 router.get("/customer", verifyToken, getCustomer);
 router.post("/customer", addCustomer);
 router.get("/provinsi", verifyToken, getProvinsi);
-router.get("/kabupaten/:provinsi_id", verifyToken, getKabupatenByProvinsi);
-router.get("/kecamatan/:kabupaten_id", verifyToken, getKecamatanByKabupaten);
-router.get("/kelurahan/:kecamatan_id", verifyToken, getKelurahanByKecamatan);
+router.get("/kabupaten/:provinsi_id", getKabupatenByProvinsi);
+router.get("/kecamatan/:kabupaten_id", getKecamatanByKabupaten);
+router.get("/kelurahan/:kecamatan_id", getKelurahanByKecamatan);
 
 // Product
 router.get("/paket", paket);
