@@ -23,7 +23,7 @@ import {
   getProvinsi,
 } from "../controller/customerController.js";
 import { banner } from "../controller/bannerController.js";
-import { paket } from "../controller/ProductController.js";
+import { paket } from "../controller/productController.js";
 
 
 const router = express.Router();
