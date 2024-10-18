@@ -25,6 +25,7 @@ import {
 import { banner } from "../controller/bannerController.js";
 import { paket } from "../controller/productController.js";
 import { tagihanUser } from "../controller/tagihanController.js";
+import { faq } from "../controller/faqController.js";
 
 const router = express.Router();
 
@@ -55,6 +56,9 @@ router.get("/tagihan-user", verifyToken, tagihanUser);
 
 // Banner
 router.get("/banner", banner);
+
+// FAQ
+router.get("/faq", faq);
 
 //google auth
 router.get(
