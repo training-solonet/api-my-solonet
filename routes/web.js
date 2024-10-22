@@ -21,6 +21,7 @@ import {
   getKecamatanByKabupaten,
   getKelurahanByKecamatan,
   getProvinsi,
+  userNearKantorLocation,
 } from "../controller/customerController.js";
 import { banner } from "../controller/bannerController.js";
 import { paket } from "../controller/productController.js";
@@ -50,6 +51,7 @@ router.get("/provinsi", verifyToken, getProvinsi);
 router.get("/kabupaten/:provinsi_id", verifyToken, getKabupatenByProvinsi);
 router.get("/kecamatan/:kabupaten_id", verifyToken, getKecamatanByKabupaten);
 router.get("/kelurahan/:kecamatan_id", verifyToken, getKelurahanByKecamatan);
+router.post("/nearLocation", userNearKantorLocation);
 
 // Product
 router.get("/paket", paket);
