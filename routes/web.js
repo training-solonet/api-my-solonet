@@ -27,6 +27,8 @@ import { banner } from "../controller/bannerController.js";
 import { paket } from "../controller/productController.js";
 import { tagihanUser } from "../controller/tagihanController.js";
 import { faq } from "../controller/faqController.js";
+import whatsappClient from "../controller/wwebController.js";
+
 
 const router = express.Router();
 
@@ -61,6 +63,12 @@ router.get("/banner", banner);
 
 // FAQ
 router.get("/faq", faq);
+
+router.post("/message", (req, res) => {
+  whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
+  res.send();
+})
+
 
 //google auth
 router.get(
