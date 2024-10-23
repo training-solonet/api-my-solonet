@@ -5,6 +5,7 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import cors from "cors";
 import router from "./routes/web.js";
 import dotenv from "dotenv";
+import whatsappClient from './controller/wwebController.js';
 import { googleSignIn, loginGoogle, registerGoogle } from "./controller/UserController.js";
 
 dotenv.config();
@@ -73,6 +74,11 @@ passport.use(
     }
   )
 );
+
+whatsappClient.initialize().catch(err => {
+  console.log("Gagal menginisialisasi Klien WhatsApp", err);
+});
+
 
 app.use(router);
 
