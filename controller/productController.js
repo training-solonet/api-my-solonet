@@ -24,7 +24,7 @@ export const paket = async (req, res) => {
 
     const updateProduct = formattedProduct.map((item) => ({
       ...item,
-      gambar: process.env.BASE_URL + '/paket/' + item.gambar,
+      gambar: `https://api.connectis.my.id/images/paket/${item.gambar}`
     }));
 
     res.status(200).json({

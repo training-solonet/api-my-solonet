@@ -5,6 +5,7 @@ import reg_districts from "../models/kecamatan.js";
 import reg_villages from "../models/kelurahan.js";
 import LokasiKantor from "../models/lokasi_kantor.js";
 import haversine from "haversine-distance";
+import Tagihan from "../models/tagihan.js";
 
 export const getProvinsi = async (req, res) => {
   try {
@@ -62,7 +63,7 @@ export const getCustomer = async (req, res) => {
 };
 
 export const addCustomer = async (req, res) => {
-  const { lat, long } = req.body;
+  const { lat, long, bulan, product_id, status_pembayaran } = req.body;
 
   try {
     const response = await Customer.create(req.body);
@@ -77,6 +78,46 @@ export const addCustomer = async (req, res) => {
     }
 
     const geocodeUrl = `https://nominatim.openstreetmap.org/reverse?lat=${lati}&lon=${lon}&format=json`;
+
+    try {
+      const locationResponse = await fetch(geocodeUrl, { timeout: 5000 });
+      const locationData = await locationResponse.json();
+
+      const tagihan = await Tagihan.create({
+        bulan,
+        product_id,
+        customer_id: response.id,
+        status_pembayaran,
+      });
+
+      if (locationResponse.ok) {
+        res.status(200).json({
+          customer: response,
+          location: locationData.display_name,
+          tagihan: tagihan,
+        });
+      } else {
+        res.status(200).json({
+          customer: response,
+          location: locationData.error || "Location not found",
+          tagihan: tagihan,
+        });
+      }
+    } catch (geocodeError) {
+      console.error("Geocode fetch error:", geocodeError);
+      const tagihan = await Tagihan.create({
+        bulan,
+        product_id,
+        customer_id: response.id,
+        status_pembayaran,
+      });
+
+      res.status(200).json({
+        customer: response,
+        location: "Geocoding service unavailable",
+        tagihan: tagihan,
+      });
+    }
 
     try {
       const locationResponse = await fetch(geocodeUrl, { timeout: 5000 });
@@ -102,7 +143,7 @@ export const addCustomer = async (req, res) => {
     }
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ error: error.message });
   }
 };
 

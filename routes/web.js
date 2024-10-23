@@ -28,7 +28,6 @@ import { paket } from "../controller/productController.js";
 import { tagihanUser } from "../controller/tagihanController.js";
 import { faq } from "../controller/faqController.js";
 
-
 const router = express.Router();
 
 // User

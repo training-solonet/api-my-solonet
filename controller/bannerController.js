@@ -14,7 +14,7 @@ export const banner = async (req, res) => {
 
         const updateBanner = formatedBanner.map(item => ({
             ...item,
-            gambar: process.env.IMAGES + '/banner/' + item.gambar
+            gambar: `https://api.connectis.my.id/images/banner/${item.gambar}`
         }))
         res.status(200).json(updateBanner);
     } catch (error) {
