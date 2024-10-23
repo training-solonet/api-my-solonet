@@ -8,6 +8,7 @@ import jwt from "jsonwebtoken";
 import cron from "node-cron";
 import { Op } from "sequelize";
 import { OAuth2Client } from "google-auth-library";
+import whatsappClient from "./wwebController.js";
 
 dotenv.config();
 const client = new OAuth2Client()
@@ -66,54 +67,12 @@ export const register = async (req, res) => {
         otp_expiry: otpExpiry,
       });
 
-      await axios.post(
-        "https://omnichannel.qiscus.com/whatsapp/v1/" +
-          process.env.QISCUS_APP_ID +
-          "/" +
-          process.env.WA_CHANNEL_ID +
-          "/messages",
-        {
-          to: phone_number,
-          type: "template",
-          template: {
-            namespace: process.env.WA_TEMPLATE_NAMESPACE,
-            name: process.env.WA_TEMPLATE_NAME,
-            language: {
-              policy: "deterministic",
-              code: "id",
-            },
-            components: [
-              {
-                type: "body",
-                parameters: [
-                  {
-                    type: "text",
-                    text: otp,
-                  },
-                ],
-              },
-              {
-                type: "button",
-                sub_type: "url",
-                index: "0",
-                parameters: [
-                  {
-                    type: "text",
-                    text: otp,
-                  },
-                ],
-              },
-            ],
-          },
-        },
-        {
-          headers: {
-            "Qiscus-App-Id": process.env.QISCUS_APP_ID,
-            "Qiscus-Secret-Key": process.env.QISCUS_SECRET_KEY,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const message = `Your OTP is: ${otp}. 
+It will expire in 5 minutes.`;
+      await axios.post("http://localhost:5000/message", {
+        phoneNumber: `${phone_number}@c.us`,
+        message,
+      })
 
       return res
         .status(200)
@@ -136,54 +95,12 @@ export const register = async (req, res) => {
       verified: false,
     });
 
-    await axios.post(
-      "https://omnichannel.qiscus.com/whatsapp/v1/" +
-        process.env.QISCUS_APP_ID +
-        "/" +
-        process.env.WA_CHANNEL_ID +
-        "/messages",
-      {
-        to: phone_number,
-        type: "template",
-        template: {
-          namespace: process.env.WA_TEMPLATE_NAMESPACE,
-          name: process.env.WA_TEMPLATE_NAME,
-          language: {
-            policy: "deterministic",
-            code: "id",
-          },
-          components: [
-            {
-              type: "body",
-              parameters: [
-                {
-                  type: "text",
-                  text: otp,
-                },
-              ],
-            },
-            {
-              type: "button",
-              sub_type: "url",
-              index: "0",
-              parameters: [
-                {
-                  type: "text",
-                  text: otp,
-                },
-              ],
-            },
-          ],
-        },
-      },
-      {
-        headers: {
-          "Qiscus-App-Id": process.env.QISCUS_APP_ID,
-          "Qiscus-Secret-Key": process.env.QISCUS_SECRET_KEY,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const message = `Your OTP is: ${otp}. 
+It will expire in 5 minutes.`;
+      await axios.post("http://localhost:5000/message", {
+        phoneNumber: `${phone_number}@c.us`,
+        message,
+      })
 
     return res.status(201).json({
       message: "User created successfully. Please verify your number",
@@ -442,54 +359,12 @@ export const resetPasswordRequest = async (req, res) => {
     user.verified = false;
     await user.save();
 
-    await axios.post(
-      "https://omnichannel.qiscus.com/whatsapp/v1/" +
-        process.env.QISCUS_APP_ID +
-        "/" +
-        process.env.WA_CHANNEL_ID +
-        "/messages",
-      {
-        to: phone_number,
-        type: "template",
-        template: {
-          namespace: process.env.WA_TEMPLATE_NAMESPACE,
-          name: process.env.WA_TEMPLATE_NAME,
-          language: {
-            policy: "deterministic",
-            code: "id",
-          },
-          components: [
-            {
-              type: "body",
-              parameters: [
-                {
-                  type: "text",
-                  text: otp,
-                },
-              ],
-            },
-            {
-              type: "button",
-              sub_type: "url",
-              index: "0",
-              parameters: [
-                {
-                  type: "text",
-                  text: otp,
-                },
-              ],
-            },
-          ],
-        },
-      },
-      {
-        headers: {
-          "Qiscus-App-Id": process.env.QISCUS_APP_ID,
-          "Qiscus-Secret-Key": process.env.QISCUS_SECRET_KEY,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const message = `Your OTP is: ${otp}. 
+It will expire in 5 minutes.`;
+      await axios.post("http://localhost:5000/message", {
+        phoneNumber: `${phone_number}@c.us`,
+        message,
+      })
 
     return res.status(200).json({ message: "OTP sent" });
   } catch (error) {}
@@ -544,78 +419,41 @@ export const resetPassword = async (req, res) => {
 };
 
 export const sendOtp = async (req, res) => {
-  const { phone_number, otp } = req.body;
+  const { phone_number } = req.body;
 
   try {
     const user = await User.findOne({ where: { phone_number } });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
     const otp = crypto.randomInt(100000, 999999).toString();
     user.otp = otp;
     user.otp_expiry = moment().add(5, "minutes").toDate();
     await user.save();
 
-    const response = await axios.post(
-      "https://omnichannel.qiscus.com/whatsapp/v1/" +
-        process.env.QISCUS_APP_ID +
-        "/" +
-        process.env.WA_CHANNEL_ID +
-        "/messages",
-      {
-        to: phone_number,
-        type: "template",
-        template: {
-          namespace: process.env.WA_TEMPLATE_NAMESPACE,
-          name: process.env.WA_TEMPLATE_NAME,
-          language: {
-            policy: "deterministic",
-            code: "id",
-          },
-          components: [
-            {
-              type: "body",
-              parameters: [
-                {
-                  type: "text",
-                  text: otp,
-                },
-              ],
-            },
-            {
-              type: "button",
-              sub_type: "url",
-              index: "0",
-              parameters: [
-                {
-                  type: "text",
-                  text: otp,
-                },
-              ],
-            },
-          ],
-        },
-      },
-      {
-        headers: {
-          "Qiscus-App-Id": process.env.QISCUS_APP_ID,
-          "Qiscus-Secret-Key": process.env.QISCUS_SECRET_KEY,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const message = `Your OTP is: ${otp}. 
+It will expire in 5 minutes.`;
+    await axios.post("http://localhost:5000/message", {
+      phoneNumber: `${phone_number}@c.us`,
+      message,
+    });
+
     res.json({
+      phone_number,
       success: true,
-      message: "OTP sent successfully",
-      data: response.data,
+      message: "OTP sent successfully via WhatsApp",
     });
   } catch (error) {
-    console.error(
-      "Error sending message:",
-      error.response?.data || error.message
-    );
+    console.error("Error sending OTP via WhatsApp:", error);
     res.status(500).json({
       success: false,
-      message: "Error sending message",
-      error: error.response?.data || error.message,
+      message: "Error sending OTP",
+      error: error.message,
     });
   }
 };

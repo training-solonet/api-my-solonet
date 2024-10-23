@@ -169,7 +169,7 @@ export const userNearKantorLocation = async (req, res) => {
       }
     });
 
-    const nearestKantor = distances.sort((a, b) => a.distance - b.distance)[0];
+    const nearestKantor = distances.sort((a, b) => a.distance - b.distance);
 
     return res.json(nearestKantor);
   } catch (error) {
