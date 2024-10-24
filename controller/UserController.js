@@ -69,7 +69,7 @@ export const register = async (req, res) => {
 
       const message = `Your OTP is: ${otp}. 
 It will expire in 5 minutes.`;
-      await axios.post("http://localhost:5000/message", {
+      await axios.post("https://api.connectis.my.id/message", {
         phoneNumber: `${phone_number}@c.us`,
         message,
       })
@@ -97,7 +97,7 @@ It will expire in 5 minutes.`;
 
     const message = `Your OTP is: ${otp}. 
 It will expire in 5 minutes.`;
-      await axios.post("http://localhost:5000/message", {
+      await axios.post("https://api.connectis.my.id/message", {
         phoneNumber: `${phone_number}@c.us`,
         message,
       })
@@ -361,7 +361,7 @@ export const resetPasswordRequest = async (req, res) => {
 
     const message = `Your OTP is: ${otp}. 
 It will expire in 5 minutes.`;
-      await axios.post("http://localhost:5000/message", {
+      await axios.post("https://api.connectis.my.id/message", {
         phoneNumber: `${phone_number}@c.us`,
         message,
       })
@@ -438,7 +438,7 @@ export const sendOtp = async (req, res) => {
 
     const message = `Your OTP is: ${otp}. 
 It will expire in 5 minutes.`;
-    await axios.post("http://localhost:5000/message", {
+    await axios.post("https://api.connectis.my.id/message", {
       phoneNumber: `${phone_number}@c.us`,
       message,
     });
