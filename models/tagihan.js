@@ -16,7 +16,7 @@ const Tagihan = db.define(
       type: DataTypes.STRING,
       allowNull: true,
       references: {
-        model: "product",
+        model: Product,
         key: "id",
       },
     },
@@ -24,7 +24,7 @@ const Tagihan = db.define(
       type: DataTypes.STRING,
       allowNull: true,
       references: {
-        model: "customer",
+        model: Customer,
         key: "id",
       },
     },

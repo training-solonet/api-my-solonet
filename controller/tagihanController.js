@@ -4,14 +4,17 @@ import cron from "node-cron"
 export const tagihanUser = async (req, res) => {
     const userId = req.user.id;
 
-    Tagihan.findByPk(userId)
-        .then((result) => {
-            res.json(result);
-        })
-        .catch((error) => {
-            console.log(error);
-            res.status(500).json({ message: "Internal Server Error" });
+    try {
+        const tagihan = await Tagihan.findAll({
+            where: {
+                customer_id: userId,
+            },
         });
+
+        res.status(200).json(tagihan);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 }
 
 cron.schedule("*/15 0 1 * *", async () => {
