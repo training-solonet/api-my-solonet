@@ -28,6 +28,7 @@ import { paket } from "../controller/productController.js";
 import { tagihanUser } from "../controller/tagihanController.js";
 import { faq } from "../controller/faqController.js";
 import whatsappClient from "../controller/wwebController.js";
+import { bniApi } from "../controller/virtualAccountController.js";
 
 
 const router = express.Router();
@@ -63,6 +64,10 @@ router.get("/banner", banner);
 
 // FAQ
 router.get("/faq", faq);
+
+//virtual Account
+router.post("/bni", bniApi)
+
 
 router.post("/message", (req, res) => {
   whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
