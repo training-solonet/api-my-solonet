@@ -33,7 +33,7 @@ const Pembayaran = db.define(
         },
         total_pembayaran: {
             type: DataTypes.INTEGER,
-            allowNull: false
+            allowNull:false,
         }
     },
     {
