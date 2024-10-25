@@ -11,21 +11,13 @@ export const tagihanUser = async (req, res) => {
           attributes: ['id'], 
       });
 
-      if (!customers.length) {
-          return res.status(200).json({ tagihan: [] });
-      }
+      const customerId = customers.map(customer => customer.id);
 
-      const customerIds = customers.map(customer => customer.id);
+      const tagihan = await Tagihan.findAll({
+          where: { customer_id: customerId }
+        });
 
-      const tagihanRecords = await Tagihan.findAll({
-          where: { customer_id: customerIds },
-          include: [{
-              model: Customer,
-              attributes: ['nama', 'nik'], 
-          }],
-      });
-
-      return res.status(200).json({ tagihan: tagihanRecords });
+      return res.status(200).json({ tagihan: tagihan });
   } catch (error) {
       console.error(error);
       return res.status(500).json({ message: 'Internal server error' });
