@@ -1,4 +1,6 @@
+import Customer from "../models/customer.js";
 import Tagihan from "../models/tagihan.js";
+import User from "../models/User.js";
 import cron from "node-cron"
 
 export const tagihanUser = async (req, res) => {
@@ -7,9 +9,9 @@ export const tagihanUser = async (req, res) => {
     try {
         const tagihan = await Tagihan.findAll({
             where: {
-                customer_id: userId,
-            },
-        });
+              customer_id: userId,
+            }
+        })
 
         res.status(200).json(tagihan);
     } catch (error) {

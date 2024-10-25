@@ -28,12 +28,12 @@ const Pembayaran = db.define(
             allowNull: false,
         },
         bank: {
-            type: DataTypes.STRING,
+            type: DataTypes.ENUM('bni', 'bri'),
             allowNull: false,
         },
         total_pembayaran: {
             type: DataTypes.INTEGER,
-            allowNull
+            allowNull: false
         }
     },
     {
