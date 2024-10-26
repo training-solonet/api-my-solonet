@@ -1,7 +1,7 @@
 import Pembayaran from "../models/pembayaran.js";
 import Tagihan from "../models/tagihan.js";
 import Customer from "../models/customer.js";
-import User from "../models/user.js"; 
+import User from "../models/User.js"; 
 
 export const bniApi = async (req, res) => {
     const { user_id, customer_id, trx_amount, description } = req.body;

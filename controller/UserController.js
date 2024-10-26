@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import User from "./models/User.js";
+import User from "../models/User.js";
 import dotenv from "dotenv";
 import axios from "axios";
 import moment from "moment";
@@ -8,7 +8,6 @@ import jwt from "jsonwebtoken";
 import cron from "node-cron";
 import { Op } from "sequelize";
 import { OAuth2Client } from "google-auth-library";
-import whatsappClient from "./wwebController.js";
 
 dotenv.config();
 const client = new OAuth2Client()
