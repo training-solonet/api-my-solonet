@@ -1,7 +1,5 @@
 import Customer from "../models/customer.js";
 import Tagihan from "../models/tagihan.js";
-import User from "../models/User.js";
-import Customer from "../models/customer.js";
 import cron from "node-cron"
 
 export const tagihanUser = async (req, res) => {
@@ -27,7 +25,7 @@ export const tagihanUser = async (req, res) => {
           }],
       });
 
-      return res.status(200).json({ tagihan: tagihanRecords });
+      return res.status(200).json(tagihanRecords);
   } catch (error) {
       console.error(error);
       return res.status(500).json({ message: 'Internal server error' });
