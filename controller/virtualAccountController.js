@@ -6,164 +6,98 @@ import User from "../models/user.js";
 import axios from "axios";
 import { error } from "console";
 
-async function getAccessTokenBri() {
-  try {
-    const response = await axios.post(
-      `${process.env.BRI_BASE_URL}/oauth/client_credential/accesstoken?grant_type=client_credentials`,
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Authorization:
-            "Basic " +
-            Buffer.from(
-              `${process.env.BRI_API_KEY}:${process.env.BRI_SECRET_KEY}`
-            ).toString("base64"),
-        },
-      }
-    );
+// async function getAccessTokenBri() {
+//   try {
+//     const response = await axios.post(
+//       `${process.env.BRI_BASE_URL}/oauth/client_credential/accesstoken?grant_type=client_credentials`,
+//       {
+//         headers: {
+//           "Content-Type": "application/x-www-form-urlencoded",
+//           Authorization:
+//             "Basic " +
+//             Buffer.from(
+//               `${process.env.BRI_API_KEY}:${process.env.BRI_SECRET_KEY}`
+//             ).toString("base64"),
+//         },
+//       }
+//     );
 
-    return response.data;
-  } catch (error) {
-    console.error(error);
-    throw new Error("Failed to get access token: " + error);
-  }
-}
-
-export const createVirtualAccountBRI = async (req, res) => {
-  const {
-    partnerServiceId,
-    customerNo,
-    virtualAccountNo,
-    virtualAccountName,
-    totalAmount,
-    expiredDate,
-    trxId,
-    additionalInfo,
-  } = req.body;
-
-  try {
-    if (!totalAmount || !totalAmount.value || !totalAmount.currency) {
-      return res.status(400).json({
-        message: "Invalid total amount",
-      });
-    }
-
-    const tokenResponse = await getAccessTokenBri();
-    const accessToken = tokenResponse.access_token;
-
-    const response = await axios.post(
-      "http://localhost:5000/create-bri",
-      {
-        partnerServiceId,
-        customerNo,
-        virtualAccountNo,
-        virtualAccountName,
-        totalAmount: {
-          value: totalAmount.value,
-          currency: totalAmount.currency,
-        },
-        expiredDate,
-        trxId,
-        additionalInfo: {
-          description: additionalInfo.description,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
-
-    await Pembayaran.create({
-      trxId: trxId,
-      tanggal_pembayaran: new Date(),
-      virtual_account: virtualAccountNo,
-      bank: "bri",
-      total_pembayaran: totalAmount.value,
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
-
-    res.status(200).json({
-      responseCode: response.data.responseCode,
-      responseMessage: response.data.responseMessage,
-      virtualAccountData: response.data.virtualAccountData,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: "Failed to create virtual account",
-      error: error.message,
-    });
-  }
-};
+//     return response.data;
+//   } catch (error) {
+//     console.error(error);
+//     throw new Error("Failed to get access token: " + error);
+//   }
+// }
 
 export const briApi = async (req, res) => {
   const {
-    partnerServiceId,
-    customerNo,
-    virtualAccountNo,
+    user_id,
+    customer_id,
+    tagihan_id,
+    partnerServiceId = "   14948",
     virtualAccountName,
     totalAmount,
-    expiredDate,
-    trxId,
     additionalInfo,
   } = req.body;
 
-  if(!partnerServiceId || !customerNo || !virtualAccountNo || !totalAmount || !trxId) {
+  if (!partnerServiceId || !user_id || !tagihan_id || !customer_id || !totalAmount) {
     return res.status(400).json({
-      error: "Missing required fields."
-    })
+      error: "Missing required fields.",
+    });
   }
 
   try {
-    const customer = await Customer.findOne({ where: { id: customerNo } });
-    if (!customer) {
-      return res.status(404).json({ error: "Customer not found." });
-    }
-
-    const tagihan = await Tagihan.findOne({ where: { customer_id: customerNo } });
-    if (!tagihan) {
-      return res.status(404).json({ error: "Tagihan not found." });
-    }
-
-    const user = await User.findOne({ where: { id: tagihan.user_id } });
+    const user = await User.findOne({ where: { id: user_id } });
     if (!user) {
       return res.status(404).json({ error: "User not found." });
     }
 
-    const payload = {
-      virtual_account: virtualAccountNo,
-      trx_id: trxId,
-      trx_amount: parseFloat(totalAmount.value),
-      customer_name: virtualAccountName,
-      customer_email: user.email,
-      customer_phone: customer.nohp,
-      description: additionalInfo?.description || "",
-      billing_type: new Date(),
-      expired_date: expiredDate,
+    const customer = await Customer.findOne({ where: { id: customer_id } });
+    if (!customer) {
+      return res.status(404).json({ error: "Customer not found." });
     }
+    
+    const trxId =
+      new Date().toISOString().replace(/[-:]/g, "").slice(0, 4) + user.id;
+
+    const phoneNumber = user.phone_number.startsWith("62")
+      ? user.phone_number.slice(-8)
+      : user.phone_number.slice(-8);
+    const customerNo = `9087${phoneNumber}`;
+    const virtualAccountNo = `${partnerServiceId}${customerNo}`;
+    const createdDate = new Date();
+    const expiredDate = new Date(createdDate.getTime() + 1 * 60 * 60 * 1000);
+
+    const payload = {
+      partnerServiceId: partnerServiceId,
+      customerNo,
+      virtualAccountNo,
+      virtualAccountName,
+      trxId,
+      totalAmount: {
+        value: parseFloat(totalAmount.value).toFixed(2),
+        currency: "IDR",
+      },
+      expiredDate,
+      additionalInfo: {
+        description: additionalInfo?.description || "",
+      },
+    };
 
     await Pembayaran.create({
-      tagihan_id: tagihan.id,
+      tagihan_id: tagihan_id,
       trx_id: trxId,
       tanggal_pembayaran: new Date(),
       virtual_account: virtualAccountNo,
-      bank: 'bri',
+      bank: "bri",
       total_pembayaran: parseFloat(totalAmount.value),
-    })
+    });
 
     res.status(201).json({
-      message: "Virtual account created successfully.",
-      virtual_account: virtualAccountNo,
-      trx_id: trxId,
-      customer_name: virtualAccountName,
-      customer_email: user.email,
-      customer_phone: customer.nohp,
-      description: payload.description,
-      billing_type: payload.billing_type,
-      expired_date: payload.expired_date,
-  });
+      response: "200270",
+      responseMessage: "Success",
+      virtualAccountData: payload,
+    });
   } catch (error) {
     console.error("Error creating virtual account:", error);
     res.status(500).json({ error: error.message });
