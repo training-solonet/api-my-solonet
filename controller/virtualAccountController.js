@@ -51,7 +51,10 @@ export const bniApi = async (req, res) => {
     const virtualAccount = `98829702${phoneLast8Digits}`;
 
     const now = new Date().toISOString();
-    const trx_id = `${now.slice(0, 10).replace(/-/g, "")}${now.slice(11,13)}${now.slice(14, 16)}${user_id}`;
+    const trx_id = `${now.slice(0, 10).replace(/-/g, "")}${now.slice(
+      11,
+      13
+    )}${now.slice(14, 16)}${user_id}`;
 
     const bniRequestBody = {
       virtual_account: virtualAccount,
@@ -77,8 +80,17 @@ export const bniApi = async (req, res) => {
       }
     );
 
+    await Pembayaran.create({
+      tagihan_id: tagihan.id,
+      trx_id: trx_id,
+      tanggal_pembayaran: new Date(),
+      virtual_account: virtualAccount,
+      bank: "bni",
+      total_pembayaran: trx_amount,
+    });
+
     return res.status(200).json({
-      data: bniResponse.data
+      data: bniResponse.data,
     });
   } catch (error) {
     console.error("Error pada bniApi:", error);
@@ -86,115 +98,97 @@ export const bniApi = async (req, res) => {
   }
 };
 
-// async function getAccessTokenBri() {
-//   try {
-//     const response = await axios.post(
-//       `${process.env.BRI_BASE_URL}/oauth/client_credential/accesstoken?grant_type=client_credentials`,
-//       {
-//         headers: {
-//           "Content-Type": "application/x-www-form-urlencoded",
-//           Authorization:
-//             "Basic " +
-//             Buffer.from(
-//               `${process.env.BRI_API_KEY}:${process.env.BRI_SECRET_KEY}`
-//             ).toString("base64"),
-//         },
-//       }
-//     );
-
-//     return response.data;
-//   } catch (error) {
-//     console.error(error);
-//     throw new Error("Failed to get access token: " + error);
-//   }
-// }
-
 export const briApi = async (req, res) => {
   const {
     user_id,
     customer_id,
-    tagihan_id,
     partnerServiceId,
-    virtualAccountNo,
-    virtualAccountName,
-    expiredDate,
-    trxId,
     totalAmount,
+    expiredDate,
     additionalInfo,
   } = req.body;
 
-  if (
-    !partnerServiceId ||
-    !user_id ||
-    !tagihan_id ||
-    !customer_id ||
-    !totalAmount
-  ) {
-    return res.status(400).json({
-      error: "Missing required fields.",
-    });
-  }
-
   try {
-    const user = await User.findOne({ where: { id: user_id } });
-    if (!user) {
-      return res.status(404).json({ error: "User not found." });
+    const customer = await Customer.findOne({
+      where: {
+        id: customer_id,
+      },
+    });
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
     }
 
-    const customer = await Customer.findOne({ where: { id: customer_id } });
-    if (!customer) {
-      return res.status(404).json({ error: "Customer not found." });
+    const user = await User.findOne({
+      where: {
+        id: user_id,
+      },
+    });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
     const tagihan = await Tagihan.findOne({
-      where: { customer_id: customer_id },
+      where: {
+        customer_id: customer_id,
+      },
     });
     if (!tagihan) {
-      return res.status(404).json({ error: "Tagihan not found." });
+      return res.status(404).json({ message: "Tagihan not found" });
     }
 
-    const phoneNumber = user.phone_number.slice(2, 10);
-    const customerNo = `9087${phoneNumber}`;
+    const phoneLast8Digits = user.phone_number.slice(-8);
+    const customerNo = `9087${phoneLast8Digits}`;
+    const virtualAccount = `${partnerServiceId}${customerNo}`;
+    const now = new Date().toISOString();
+    const trxId = `${now.slice(0, 10).replace(/-/g, "")}${now.slice(
+      11,
+      13
+    )}${now.slice(14, 16)}${user_id}`;
+    const nama = customer.nama;
 
-    const payload = {
-      partnerServiceId,
-      customerNo,
-      virtualAccountNo,
-      virtualAccountName,
-      trxId,
+    const briPayload = {
+      partnerServiceId: partnerServiceId,
+      customerNo: customerNo,
+      virtualAccountNo: virtualAccount,
+      virtualAccountName: nama,
       totalAmount: {
-        value: parseFloat(totalAmount.value).toFixed(2),
-        currency: "IDR",
+        value: totalAmount.value,
+        currency: totalAmount.currency,
       },
-      expiredDate,
+      expiredDate: expiredDate,
+      trxId: trxId,
       additionalInfo: {
-        description: additionalInfo?.description || "",
+        description: additionalInfo.description,
       },
     };
 
-    const briApiResponse = await axios.post('https://aplikasi.solonet.net.id/bri/api/create-va', payload, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'EMD3nAKY0T757NYCuq1uL6W1qvy7QkeSKGv1ZUxzKXp0lwcEHJIsVU1LTWpAnFxA'
-      },
-    });
+    const response = await axios.post(
+      `https://aplikasi.solonet.net.id/bri/api/create-va`,
+      briPayload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Authorization":
+            "EMD3nAKY0T757NYCuq1uL6W1qvy7QkeSKGv1ZUxzKXp0lwcEHJIsVU1LTWpAnFxA",
+        },
+      }
+    );
 
     await Pembayaran.create({
-      tagihan_id: tagihan_id,
+      tagihan_id: tagihan.id,
       trx_id: trxId,
       tanggal_pembayaran: new Date(),
-      virtual_account: virtualAccountNo,
+      virtual_account: virtualAccount,
       bank: "bri",
-      total_pembayaran: parseFloat(totalAmount.value),
+      total_pembayaran: totalAmount.value,
     });
 
-    res.status(201).json({
-      response: briApiResponse.status,
-      responseMessage: "Success",
-      virtualAccountData: briApiResponse.data,
-    });
+    res.status(response.status).json(response.data);
   } catch (error) {
-    console.error("Error creating virtual account:", error);
-    res.status(500).json({ error: error.message });
+    console.error("Error creating virtual account:", error.message);
+    res.status(500).json({
+      message: "Failed to create virtual account",
+      error: error.response ? error.response.data : error.message,
+    });
   }
 };
