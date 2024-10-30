@@ -16,7 +16,7 @@ export const detailTagihan = async (req, res) => {
         return res.status(404).json({ message: "Tagihan tidak ditemukan" });
         }
     
-        const pembayaran = await Pembayaran.findAll({
+        const pembayaran = await Pembayaran.findOne({
         where: {
             tagihan_id: tagihan_id,
         },
