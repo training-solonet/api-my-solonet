@@ -8,7 +8,6 @@ import jwt from "jsonwebtoken";
 import cron from "node-cron";
 import { Op } from "sequelize";
 import { OAuth2Client } from "google-auth-library";
-import whatsappClient from "./wwebController.js";
 
 dotenv.config();
 const client = new OAuth2Client()

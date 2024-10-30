@@ -14,7 +14,6 @@ export const bniApi = async (req, res) => {
       description,
       billing_type,
       trx_amount,
-      expiredDate,
     } = req.body;
 
     const customer = await Customer.findOne({
@@ -50,11 +49,11 @@ export const bniApi = async (req, res) => {
     const phoneLast8Digits = user.phone_number.slice(-8);
     const virtualAccount = `98829702${phoneLast8Digits}`;
 
-    const now = new Date().toISOString();
-    const trx_id = `${now.slice(0, 10).replace(/-/g, "")}${now.slice(
-      11,
-      13
-    )}${now.slice(14, 16)}${user_id}`;
+    const now = new Date();
+    const trx_id = `${now.toISOString().slice(0, 10).replace(/-/g, '')}${now.toISOString().slice(11, 13)}${now.toISOString().slice(14, 16)}${user_id}`;
+
+    const expirationDate = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const expiredDate = expirationDate.toISOString().slice(0, 19).replace('T', ' ');
 
     const bniRequestBody = {
       virtual_account: virtualAccount,
@@ -91,6 +90,7 @@ export const bniApi = async (req, res) => {
 
     return res.status(200).json({
       data: bniResponse.data,
+      expiredDate: expiredDate,
     });
   } catch (error) {
     console.error("Error pada bniApi:", error);
