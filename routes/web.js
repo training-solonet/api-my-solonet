@@ -28,7 +28,7 @@ import { paket } from "../controller/productController.js";
 import { tagihanUser } from "../controller/tagihanController.js";
 import { faq } from "../controller/faqController.js";
 import whatsappClient from "../controller/wwebController.js";
-import { bniApi } from "../controller/virtualAccountController.js";
+import { bniApi, briApi } from "../controller/virtualAccountController.js";
 import { detailTagihan } from "../controller/detailTagihanController.js";
 
 
@@ -62,6 +62,9 @@ router.get("/tagihan-user", verifyToken, tagihanUser);
 
 // Banner
 router.get("/banner", banner);
+
+// Virtual Account
+router.post("/bri", briApi)
 
 // FAQ
 router.get("/faq", faq);

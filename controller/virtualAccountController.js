@@ -1,7 +1,9 @@
-import axios from "axios";
+import Pembayaran from "../models/pembayaran.js";
+import CheckPembayaran from "../models/check_pembayaran.js";
+import Tagihan from "../models/tagihan.js";
 import Customer from "../models/customer.js";
 import User from "../models/User.js";
-import Tagihan from "../models/tagihan.js";
+import axios from "axios";
 import qs from "qs";
 
 export const bniApi = async (req, res) => {
@@ -77,6 +79,15 @@ export const bniApi = async (req, res) => {
       }
     );
 
+    await Pembayaran.create({
+      tagihan_id: tagihan.id,
+      trx_id: trx_id,
+      tanggal_pembayaran: new Date(),
+      virtual_account: virtualAccount,
+      bank: "bni",
+      total_pembayaran: trx_amount,
+    });
+
     return res.status(200).json({
       data: bniResponse.data,
       expiredDate: expiredDate,
@@ -84,5 +95,100 @@ export const bniApi = async (req, res) => {
   } catch (error) {
     console.error("Error pada bniApi:", error);
     return res.status(500).json({ message: error.message });
+  }
+};
+
+export const briApi = async (req, res) => {
+  const {
+    user_id,
+    customer_id,
+    partnerServiceId,
+    totalAmount,
+    expiredDate,
+    additionalInfo,
+  } = req.body;
+
+  try {
+    const customer = await Customer.findOne({
+      where: {
+        id: customer_id,
+      },
+    });
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    const user = await User.findOne({
+      where: {
+        id: user_id,
+      },
+    });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const tagihan = await Tagihan.findOne({
+      where: {
+        customer_id: customer_id,
+      },
+    });
+    if (!tagihan) {
+      return res.status(404).json({ message: "Tagihan not found" });
+    }
+
+    const phoneLast8Digits = user.phone_number.slice(-8);
+    const customerNo = `9087${phoneLast8Digits}`;
+    const virtualAccount = `${partnerServiceId}${customerNo}`;
+    const now = new Date().toISOString();
+    const trxId = `${now.slice(0, 10).replace(/-/g, "")}${now.slice(
+      11,
+      13
+    )}${now.slice(14, 16)}${user_id}`;
+    const nama = customer.nama;
+
+    const briPayload = {
+      partnerServiceId: partnerServiceId,
+      customerNo: customerNo,
+      virtualAccountNo: virtualAccount,
+      virtualAccountName: nama,
+      totalAmount: {
+        value: totalAmount.value,
+        currency: totalAmount.currency,
+      },
+      expiredDate: expiredDate,
+      trxId: trxId,
+      additionalInfo: {
+        description: additionalInfo.description,
+      },
+    };
+
+    const response = await axios.post(
+      `https://aplikasi.solonet.net.id/bri/api/create-va`,
+      briPayload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Authorization":
+            "EMD3nAKY0T757NYCuq1uL6W1qvy7QkeSKGv1ZUxzKXp0lwcEHJIsVU1LTWpAnFxA",
+        },
+      }
+    );
+
+    await Pembayaran.create({
+      tagihan_id: tagihan.id,
+      trx_id: trxId,
+      tanggal_pembayaran: new Date(),
+      virtual_account: virtualAccount,
+      bank: "bri",
+      total_pembayaran: totalAmount.value,
+    });
+
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error("Error creating virtual account:", error.message);
+    res.status(500).json({
+      message: "Failed to create virtual account",
+      error: error.response ? error.response.data : error.message,
+    });
   }
 };
