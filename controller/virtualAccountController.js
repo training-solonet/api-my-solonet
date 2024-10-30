@@ -34,13 +34,22 @@ export const briApi = async (req, res) => {
     user_id,
     customer_id,
     tagihan_id,
-    partnerServiceId = "   14948",
+    partnerServiceId,
+    virtualAccountNo,
     virtualAccountName,
+    expiredDate,
+    trxId,
     totalAmount,
     additionalInfo,
   } = req.body;
 
-  if (!partnerServiceId || !user_id || !tagihan_id || !customer_id || !totalAmount) {
+  if (
+    !partnerServiceId ||
+    !user_id ||
+    !tagihan_id ||
+    !customer_id ||
+    !totalAmount
+  ) {
     return res.status(400).json({
       error: "Missing required fields.",
     });
@@ -56,20 +65,19 @@ export const briApi = async (req, res) => {
     if (!customer) {
       return res.status(404).json({ error: "Customer not found." });
     }
-    
-    const trxId =
-      new Date().toISOString().replace(/[-:]/g, "").slice(0, 4) + user.id;
 
-    const phoneNumber = user.phone_number.startsWith("62")
-      ? user.phone_number.slice(-8)
-      : user.phone_number.slice(-8);
+    const tagihan = await Tagihan.findOne({
+      where: { customer_id: customer_id },
+    });
+    if (!tagihan) {
+      return res.status(404).json({ error: "Tagihan not found." });
+    }
+
+    const phoneNumber = user.phone_number.slice(2, 10);
     const customerNo = `9087${phoneNumber}`;
-    const virtualAccountNo = `${partnerServiceId}${customerNo}`;
-    const createdDate = new Date();
-    const expiredDate = new Date(createdDate.getTime() + 1 * 60 * 60 * 1000);
 
     const payload = {
-      partnerServiceId: partnerServiceId,
+      partnerServiceId,
       customerNo,
       virtualAccountNo,
       virtualAccountName,
@@ -84,6 +92,13 @@ export const briApi = async (req, res) => {
       },
     };
 
+    const briApiResponse = await axios.post('https://aplikasi.solonet.net.id/bri/api/create-va', payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'EMD3nAKY0T757NYCuq1uL6W1qvy7QkeSKGv1ZUxzKXp0lwcEHJIsVU1LTWpAnFxA'
+      },
+    });
+
     await Pembayaran.create({
       tagihan_id: tagihan_id,
       trx_id: trxId,
@@ -94,9 +109,9 @@ export const briApi = async (req, res) => {
     });
 
     res.status(201).json({
-      response: "200270",
+      response: briApiResponse.status,
       responseMessage: "Success",
-      virtualAccountData: payload,
+      virtualAccountData: briApiResponse.data,
     });
   } catch (error) {
     console.error("Error creating virtual account:", error);
