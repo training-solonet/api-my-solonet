@@ -22,7 +22,7 @@ export const detailTagihan = async (req, res) => {
         },
         });
     
-        return res.status(200).json({ tagihan, pembayaran });
+        return res.status(200).json( tagihan, pembayaran );
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
