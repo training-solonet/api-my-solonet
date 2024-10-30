@@ -29,6 +29,7 @@ import { tagihanUser } from "../controller/tagihanController.js";
 import { faq } from "../controller/faqController.js";
 import whatsappClient from "../controller/wwebController.js";
 import { bniApi } from "../controller/virtualAccountController.js";
+import { detailTagihan } from "../controller/detailTagihanController.js";
 
 
 const router = express.Router();
@@ -65,8 +66,9 @@ router.get("/banner", banner);
 // FAQ
 router.get("/faq", faq);
 
-//virtual Account
-router.post("/bni", bniApi)
+//transaksi
+router.post("/bni", bniApi);
+router.get("/detail-tagihan/:tagihan_id", detailTagihan);
 
 
 router.post("/message", (req, res) => {
