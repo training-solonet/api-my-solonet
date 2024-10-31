@@ -30,6 +30,7 @@ import { faq } from "../controller/faqController.js";
 import whatsappClient from "../controller/wwebController.js";
 import {
   bniApi,
+  BniInquiry,
   briApi,
   checkPembayaranBriva,
   deleteVaBri,
@@ -63,6 +64,7 @@ router.post("/nearLocation", userNearKantorLocation);
 // Product
 router.get("/paket", paket);
 router.get("/tagihan-user", verifyToken, tagihanUser);
+router.get("/detail-tagihan/:tagihan_id", detailTagihan);
 
 // Banner
 router.get("/banner", banner);
@@ -70,8 +72,18 @@ router.get("/banner", banner);
 // FAQ
 router.get("/faq", faq);
 
+// Whatsapp
+router.post("/message", (req, res) => {
+  whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
+  res.send();
+})
+
+// FAQ
+router.get("/faq", faq);
+
 //transaksi
 router.post("/bni", bniApi);
+router.post("/bni-inquiry", BniInquiry);
 router.post("/bri", briApi);
 router.post("/bri-inquiry", checkPembayaranBriva);
 router.delete("/bri-delete", deleteVaBri);
