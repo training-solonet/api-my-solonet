@@ -28,7 +28,13 @@ import { paket } from "../controller/productController.js";
 import { tagihanUser } from "../controller/tagihanController.js";
 import { faq } from "../controller/faqController.js";
 import whatsappClient from "../controller/wwebController.js";
-import { bniApi, BniInquiry, briApi } from "../controller/virtualAccountController.js";
+import {
+  bniApi,
+  BniInquiry,
+  briApi,
+  checkPembayaranBriva,
+  deleteVaBri,
+} from "../controller/virtualAccountController.js";
 import { detailTagihan } from "../controller/detailTagihanController.js";
 
 const router = express.Router();
@@ -63,11 +69,6 @@ router.get("/detail-tagihan/:tagihan_id", detailTagihan);
 // Banner
 router.get("/banner", banner);
 
-// Virtual Account
-router.post("/bri", briApi)
-router.post("/bni", bniApi);
-router.post("/bni-inquiry", BniInquiry);
-
 // FAQ
 router.get("/faq", faq);
 
@@ -76,6 +77,22 @@ router.post("/message", (req, res) => {
   whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
   res.send();
 })
+
+// FAQ
+router.get("/faq", faq);
+
+//transaksi
+router.post("/bni", bniApi);
+router.post("/bni-inquiry", BniInquiry);
+router.post("/bri", briApi);
+router.post("/bri-inquiry", checkPembayaranBriva);
+router.delete("/bri-delete", deleteVaBri);
+router.get("/detail-tagihan/:tagihan_id", detailTagihan);
+
+router.post("/message", (req, res) => {
+  whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
+  res.send();
+});
 
 //google auth
 router.get(
