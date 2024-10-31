@@ -84,9 +84,9 @@ router.get("/faq", faq);
 //transaksi
 router.post("/bni", bniApi);
 router.post("/bni-inquiry", BniInquiry);
-router.post("/bri", briApi);
-router.post("/bri-inquiry", checkPembayaranBriva);
-router.delete("/bri-delete", deleteVaBri);
+router.post("/bri", verifyToken, briApi);
+router.post("/bri-inquiry", verifyToken, checkPembayaranBriva);
+router.delete("/bri-delete", verifyToken, deleteVaBri);
 router.get("/detail-tagihan/:tagihan_id", detailTagihan);
 
 router.post("/message", (req, res) => {

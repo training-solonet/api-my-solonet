@@ -99,7 +99,7 @@ export const bniApi = async (req, res) => {
   }
 };
 
-export const BniInquiry  = async (req, res) => {
+export const BniInquiry = async (req, res) => {
   const { trx_id } = req.body;
 
   try {
@@ -138,13 +138,14 @@ export const BniInquiry  = async (req, res) => {
 
 export const briApi = async (req, res) => {
   const {
-    user_id,
     customer_id,
     tagihan_id,
     partnerServiceId,
     totalAmount,
     additionalInfo,
   } = req.body;
+
+  const user_id = req.user_id;
 
   try {
     const customer = await Customer.findOne({
@@ -278,13 +279,10 @@ export const briApi = async (req, res) => {
 };
 
 export const checkPembayaranBriva = async (req, res) => {
-  const {
-    customer_id,
-    user_id,
-    tagihan_id,
-    partnerServiceId,
-    inquiryRequestId,
-  } = req.body;
+  const { customer_id, tagihan_id, partnerServiceId, inquiryRequestId } =
+    req.body;
+
+  const user_id = req.user_id;
 
   try {
     const customer = await Customer.findOne({
@@ -358,7 +356,7 @@ export const checkPembayaranBriva = async (req, res) => {
         tanggal_pembayaran: new Date(),
         virtual_account: virtualAccountCustomer,
         bank: checkPembayaran.bank,
-        total_pembayaran: tagihan.total_tagihan, 
+        total_pembayaran: tagihan.total_tagihan,
       });
 
       await Tagihan.update(
@@ -378,7 +376,9 @@ export const checkPembayaranBriva = async (req, res) => {
 };
 
 export const deleteVaBri = async (req, res) => {
-  const { customer_id, user_id, tagihan_id, partnerServiceId } = req.body;
+  const { customer_id, tagihan_id, partnerServiceId } = req.body;
+
+  const user_id = req.user_id;
 
   try {
     const customer = await Customer.findOne({
@@ -440,6 +440,12 @@ export const deleteVaBri = async (req, res) => {
         data: deletePayload,
       }
     );
+
+    await CheckPembayaran.destroy({
+      where: {
+        tagihan_id: tagihan_id,
+      },
+    });
 
     res.status(response.status).json(response.data);
   } catch (error) {
