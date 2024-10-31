@@ -98,6 +98,43 @@ export const bniApi = async (req, res) => {
   }
 };
 
+export const BniInquiry  = async (req, res) => {
+  const { trx_id } = req.body;
+
+  try {
+    const pembayaran = await Pembayaran.findOne({
+      where: {
+        trx_id: trx_id,
+      },
+    });
+
+    if (!pembayaran) {
+      return res.status(404).json({ message: "Pembayaran tidak ditemukan" });
+    }
+
+    const bniRequestBody = {
+      trx_id: trx_id,
+    };
+
+    const response = await axios.post(
+      `https://billing.solonet.net.id/bni/api/inquiry-virtual-account`,
+      qs.stringify(bniRequestBody),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Authorization":
+            "fFvCP2kk4wABO8CZO3z25BYF6cAuyGKmpsAIFp4rK4CWmjRkOnXNxNGfQkM5VmHf",
+        },
+      }
+    );
+
+    res.status(response.status).json(response.data);
+  } catch (error) {
+    console.error("Error pada bniInquiry:", error);
+    return res.status(500).json({ message: error.message });
+  }
+};
+
 export const briApi = async (req, res) => {
   const {
     user_id,
