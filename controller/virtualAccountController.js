@@ -139,7 +139,7 @@ export const briApi = async (req, res) => {
 
     const existingCheckPembayaran = await CheckPembayaran.findOne({
       where: {
-        tagihan_id: tagihan.id,
+        tagihan_id: tagihan_id,
       },
     });
     if (existingCheckPembayaran) {
