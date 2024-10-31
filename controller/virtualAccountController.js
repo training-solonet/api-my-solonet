@@ -6,11 +6,20 @@ import User from "../models/User.js";
 import axios from "axios";
 import qs from "qs";
 import dayjs from "dayjs";
+import { error } from "console";
 
 export const bniApi = async (req, res) => {
   try {
     const { user_id, customer_id, description, billing_type, trx_amount } =
       req.body;
+
+    const user = await User.findOne({
+      where: { id: user_id },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User tidak ditemukan" });
+    }
 
     const customer = await Customer.findOne({
       where: {
@@ -21,14 +30,6 @@ export const bniApi = async (req, res) => {
 
     if (!customer) {
       return res.status(404).json({ message: "Customer tidak ditemukan" });
-    }
-
-    const user = await User.findOne({
-      where: { id: user_id },
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: "User tidak ditemukan" });
     }
 
     const tagihan = await Tagihan.findOne({
@@ -80,16 +81,15 @@ export const bniApi = async (req, res) => {
       }
     );
 
-    await Pembayaran.create({
+    await CheckPembayaran.create({
       tagihan_id: tagihan.id,
       trx_id: trx_id,
-      tanggal_pembayaran: new Date(),
       virtual_account: virtualAccount,
       bank: "bni",
-      total_pembayaran: trx_amount,
+      expired_date: expiredDate,
     });
 
-    return res.status(200).json({
+    res.status(200).json({
       data: bniResponse.data,
       expiredDate: expiredDate,
     });
@@ -99,18 +99,17 @@ export const bniApi = async (req, res) => {
   }
 };
 
-export const BniInquiry  = async (req, res) => {
-  const { trx_id } = req.body;
+export const BniInquiry = async (req, res) => {
+  const { trx_id, customer_id } = req.body;
 
   try {
-    const pembayaran = await Pembayaran.findOne({
+    const checkPembayaran = await CheckPembayaran.findOne({
       where: {
         trx_id: trx_id,
       },
     });
-
-    if (!pembayaran) {
-      return res.status(404).json({ message: "Pembayaran tidak ditemukan" });
+    if (!checkPembayaran) {
+      return res.status(404).json({ message: error.message });
     }
 
     const bniRequestBody = {
@@ -128,6 +127,20 @@ export const BniInquiry  = async (req, res) => {
         },
       }
     );
+
+    await Pembayaran.create({
+      tagihan_id: checkPembayaran.tagihan_id,
+      trx_id: trx_id,
+      tanggal_pembayaran: new Date(),
+      virtual_account: checkPembayaran.virtual_account,
+      bank: checkPembayaran.bank,
+      total_pembayaran: '150000',
+    });
+
+    await Tagihan.update(
+      { status_pembayaran: '1' },
+      { where: { id: checkPembayaran.tagihan_id },
+    });
 
     res.status(response.status).json(response.data);
   } catch (error) {
@@ -358,7 +371,7 @@ export const checkPembayaranBriva = async (req, res) => {
         tanggal_pembayaran: new Date(),
         virtual_account: virtualAccountCustomer,
         bank: checkPembayaran.bank,
-        total_pembayaran: tagihan.total_tagihan, 
+        total_pembayaran: tagihan.total_tagihan,
       });
 
       await Tagihan.update(
