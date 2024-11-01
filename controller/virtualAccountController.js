@@ -6,6 +6,7 @@ import User from "../models/User.js";
 import axios from "axios";
 import qs from "qs";
 import dayjs from "dayjs";
+import Product from "../models/Product.js";
 
 export const bniApi = async (req, res) => {
   try {
@@ -307,6 +308,10 @@ export const checkPembayaranBriva = async (req, res) => {
       where: {
         customer_id: customer_id,
       },
+      include: {
+        model: Product,
+        attributes: ["harga"],
+      }
     });
     if (!tagihan) {
       return res.status(404).json({ message: "Tagihan not found" });
@@ -351,7 +356,7 @@ export const checkPembayaranBriva = async (req, res) => {
 
     if (additionalInfo && additionalInfo.paidStatus === "Y") {
 
-      const totalPembayaran = tagihan.total_tagihan * tagihan.product.harga;
+      const totalPembayaran = tagihan.product.harga;
 
       await Pembayaran.create({
         tagihan_id: tagihan.id,
