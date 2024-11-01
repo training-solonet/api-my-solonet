@@ -7,13 +7,20 @@ import Product from "../models/Product.js";
 import axios from "axios";
 import qs from "qs";
 import dayjs from "dayjs";
+import { error } from "console";
 
 export const bniApi = async (req, res) => {
   try {
-    const {customer_id, description, billing_type, trx_amount } =
-      req.body;
+    const { customer_id, description, billing_type, trx_amount } = req.body;
 
     const user_id = req.user_id;
+    const user = await User.findOne({
+      where: { id: user_id },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: "User tidak ditemukan" });
+    }
 
     const customer = await Customer.findOne({
       where: {
@@ -123,7 +130,7 @@ export const BniInquiry = async (req, res) => {
       },
       include: {
         model: Product,
-        attributes: ['harga'],
+        attributes: ["harga"],
       },
     });
     if (!tagihan) {
@@ -131,7 +138,6 @@ export const BniInquiry = async (req, res) => {
     }
     const total_tagihan = tagihan.product.harga;
 
-    
     const checkPembayaran = await CheckPembayaran.findOne({
       where: {
         trx_id: trx_id,
@@ -354,10 +360,6 @@ export const checkPembayaranBriva = async (req, res) => {
       where: {
         customer_id: customer_id,
       },
-      include: {
-        model: Product,
-        attributes: ["harga"],
-      }
     });
     if (!tagihan) {
       return res.status(404).json({ message: "Tagihan not found" });
@@ -401,16 +403,13 @@ export const checkPembayaranBriva = async (req, res) => {
     const { additionalInfo } = response.data;
 
     if (additionalInfo && additionalInfo.paidStatus === "Y") {
-
-      const totalPembayaran = tagihan.product.harga;
-
       await Pembayaran.create({
         tagihan_id: tagihan.id,
         trx_id: checkPembayaran.trx_id,
         tanggal_pembayaran: new Date(),
         virtual_account: virtualAccountCustomer,
         bank: checkPembayaran.bank,
-        total_pembayaran: totalPembayaran,
+        total_pembayaran: tagihan.total_tagihan,
       });
 
       await Tagihan.update(
