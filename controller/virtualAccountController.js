@@ -11,16 +11,10 @@ import { error } from "console";
 
 export const bniApi = async (req, res) => {
   try {
-    const { user_id, customer_id, description, billing_type, trx_amount } =
+    const {customer_id, description, billing_type, trx_amount } =
       req.body;
 
-    const user = await User.findOne({
-      where: { id: user_id },
-    });
-
-    if (!user) {
-      return res.status(404).json({ message: "User tidak ditemukan" });
-    }
+    const user_id = req.user_id;
 
     const customer = await Customer.findOne({
       where: {
