@@ -83,7 +83,7 @@ router.get("/faq", faq);
 
 //transaksi
 router.post("/bni", bniApi);
-router.post("/bni-inquiry", BniInquiry);
+router.post("/bni-inquiry", verifyToken, BniInquiry);
 router.post("/bri", verifyToken, briApi);
 router.post("/bri-inquiry", verifyToken, checkPembayaranBriva);
 router.delete("/bri-delete", verifyToken, deleteVaBri);

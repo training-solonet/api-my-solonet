@@ -3,6 +3,7 @@ import CheckPembayaran from "../models/check_pembayaran.js";
 import Tagihan from "../models/tagihan.js";
 import Customer from "../models/customer.js";
 import User from "../models/User.js";
+import Product from "../models/Product.js";
 import axios from "axios";
 import qs from "qs";
 import dayjs from "dayjs";
@@ -100,12 +101,48 @@ export const bniApi = async (req, res) => {
 };
 
 export const BniInquiry = async (req, res) => {
-  const { trx_id } = req.body;
+  const { customer_id, trx_id, tagihan_id } = req.body;
+
+  const user_id = req.user_id;
 
   try {
+    const customer = await Customer.findOne({
+      where: {
+        id: customer_id,
+      },
+    });
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    const user = await User.findOne({
+      where: {
+        id: user_id,
+      },
+    });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const tagihan = await Tagihan.findOne({
+      where: {
+        id: tagihan_id,
+      },
+      include: {
+        model: Product,
+        attributes: ['harga'],
+      },
+    });
+    if (!tagihan) {
+      return res.status(404).json({ message: "Tagihan not found" });
+    }
+    const total_tagihan = tagihan.product.harga;
+
+    
     const checkPembayaran = await CheckPembayaran.findOne({
       where: {
         trx_id: trx_id,
+        tagihan_id: tagihan_id,
       },
     });
     if (!checkPembayaran) {
@@ -127,24 +164,24 @@ export const BniInquiry = async (req, res) => {
         },
       }
     );
-    
+
     const { additionalInfo } = response.data;
 
     if (additionalInfo && additionalInfo.va_status === "2") {
-    await Pembayaran.create({
-      tagihan_id: checkPembayaran.tagihan_id,
-      trx_id: trx_id,
-      tanggal_pembayaran: new Date(),
-      virtual_account: checkPembayaran.virtual_account,
-      bank: checkPembayaran.bank,
-      total_pembayaran: '150000', //masih statis
-    });
+      await Pembayaran.create({
+        tagihan_id: checkPembayaran.tagihan_id,
+        trx_id: trx_id,
+        tanggal_pembayaran: new Date(),
+        virtual_account: checkPembayaran.virtual_account,
+        bank: checkPembayaran.bank,
+        total_pembayaran: total_tagihan,
+      });
 
-    await Tagihan.update(
-      { status_pembayaran: '1' },
-      { where: { id: checkPembayaran.tagihan_id },
-    });
-  }
+      await Tagihan.update(
+        { status_pembayaran: "1" },
+        { where: { id: checkPembayaran.tagihan_id } }
+      );
+    }
 
     res.status(response.status).json(response.data);
   } catch (error) {
