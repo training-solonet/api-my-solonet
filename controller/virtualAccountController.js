@@ -100,7 +100,7 @@ export const bniApi = async (req, res) => {
 };
 
 export const BniInquiry = async (req, res) => {
-  const { trx_id, customer_id } = req.body;
+  const { trx_id } = req.body;
 
   try {
     const checkPembayaran = await CheckPembayaran.findOne({
@@ -127,20 +127,24 @@ export const BniInquiry = async (req, res) => {
         },
       }
     );
+    
+    const { additionalInfo } = response.data;
 
+    if (additionalInfo && additionalInfo.va_status === "2") {
     await Pembayaran.create({
       tagihan_id: checkPembayaran.tagihan_id,
       trx_id: trx_id,
       tanggal_pembayaran: new Date(),
       virtual_account: checkPembayaran.virtual_account,
       bank: checkPembayaran.bank,
-      total_pembayaran: '150000',
+      total_pembayaran: '150000', //masih statis
     });
 
     await Tagihan.update(
       { status_pembayaran: '1' },
       { where: { id: checkPembayaran.tagihan_id },
     });
+  }
 
     res.status(response.status).json(response.data);
   } catch (error) {
