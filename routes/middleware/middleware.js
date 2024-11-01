@@ -15,6 +15,7 @@ export const verifyToken = (req, res, next) => {
     try {
         const verifiedToken = jwt.verify(token, process.env.JWT_SECRET);
         req.user = verifiedToken;
+        req.user_id = verifiedToken.id;
         next();
     } catch (error) {
         console.log(error);
