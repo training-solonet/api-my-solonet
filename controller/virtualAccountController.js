@@ -350,13 +350,16 @@ export const checkPembayaranBriva = async (req, res) => {
     const { additionalInfo } = response.data;
 
     if (additionalInfo && additionalInfo.paidStatus === "Y") {
+
+      const totalPembayaran = tagihan.total_tagihan * tagihan.product.harga;
+
       await Pembayaran.create({
         tagihan_id: tagihan.id,
         trx_id: checkPembayaran.trx_id,
         tanggal_pembayaran: new Date(),
         virtual_account: virtualAccountCustomer,
         bank: checkPembayaran.bank,
-        total_pembayaran: tagihan.total_tagihan,
+        total_pembayaran: totalPembayaran,
       });
 
       await Tagihan.update(
