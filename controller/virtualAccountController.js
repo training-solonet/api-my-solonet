@@ -166,7 +166,7 @@ export const BniInquiry = async (req, res) => {
 
     const { additionalInfo } = response.data;
 
-    if (additionalInfo && additionalInfo.va_status === "2") {
+    if (additionalInfo && additionalInfo.va_status === "0") {
       await Pembayaran.create({
         tagihan_id: checkPembayaran.tagihan_id,
         trx_id: trx_id,
