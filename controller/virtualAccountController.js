@@ -11,7 +11,7 @@ import { error } from "console";
 
 export const bniApi = async (req, res) => {
   try {
-    const { customer_id, description, billing_type, trx_amount } = req.body;
+    const { customer_id, tagihan_id } = req.body;
 
     const user_id = req.user_id;
     const user = await User.findOne({
@@ -35,14 +35,24 @@ export const bniApi = async (req, res) => {
 
     const tagihan = await Tagihan.findOne({
       where: {
+        id: tagihan_id,
         customer_id: customer_id,
-        status_pembayaran: "0",
+      },
+      include: {
+        model: Product,
+        attributes: ["harga"],
       },
     });
 
     if (!tagihan) {
       return res.status(404).json({ message: "Tagihan tidak ditemukan" });
     }
+
+    let currentDate = new Date();
+    let bulan = currentDate.toLocaleString("default", { month: "long" });
+    const description = "Tagihan Internet Bulan " + bulan;
+
+    const trx_amount = tagihan.product.harga;
 
     const phoneLast8Digits = user.phone_number.slice(-8);
     const virtualAccount = `98829702${phoneLast8Digits}`;
@@ -62,7 +72,6 @@ export const bniApi = async (req, res) => {
       virtual_account: virtualAccount,
       trx_id: trx_id,
       description: description,
-      billing_type: billing_type,
       trx_amount: trx_amount,
       user_id: user_id,
       expiredDate: expiredDate,
@@ -71,13 +80,12 @@ export const bniApi = async (req, res) => {
     };
 
     const bniResponse = await axios.post(
-      `https://billing.solonet.net.id/bni/api/create-virtual-account`,
+      process.env.BNI_API_CREATE_URL,
       qs.stringify(bniRequestBody),
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          "X-Authorization":
-            "fFvCP2kk4wABO8CZO3z25BYF6cAuyGKmpsAIFp4rK4CWmjRkOnXNxNGfQkM5VmHf",
+          "X-Authorization": process.env.BNI_API_KEY,
         },
       }
     );
@@ -92,7 +100,8 @@ export const bniApi = async (req, res) => {
 
     res.status(200).json({
       data: bniResponse.data,
-      expiredDate: expiredDate,
+      trx_amount: trx_amount,
+      expired_date: expiredDate,
     });
   } catch (error) {
     console.error("Error pada bniApi:", error);
@@ -153,20 +162,19 @@ export const BniInquiry = async (req, res) => {
     };
 
     const response = await axios.post(
-      `https://billing.solonet.net.id/bni/api/inquiry-virtual-account`,
+      process.env.BNI_API_INQUIRY_URL,
       qs.stringify(bniRequestBody),
       {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          "X-Authorization":
-            "fFvCP2kk4wABO8CZO3z25BYF6cAuyGKmpsAIFp4rK4CWmjRkOnXNxNGfQkM5VmHf",
+          "X-Authorization": process.env.BNI_API_KEY,
         },
       }
     );
 
-    const { additionalInfo } = response.data;
-
-    if (additionalInfo && additionalInfo.va_status === "0") {
+    const { data } = response.data;
+    
+    if (data && data.va_status === "0") {
       await Pembayaran.create({
         tagihan_id: checkPembayaran.tagihan_id,
         trx_id: trx_id,
@@ -182,7 +190,10 @@ export const BniInquiry = async (req, res) => {
       );
     }
 
-    res.status(response.status).json(response.data);
+    res.status(response.status).json({
+      data: response.data,
+      trx_amount: total_tagihan,
+    });
   } catch (error) {
     console.error("Error pada bniInquiry:", error);
     return res.status(500).json({ message: error.message });
