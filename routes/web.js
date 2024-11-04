@@ -33,7 +33,6 @@ import {
   BniInquiry,
   briApi,
   checkPembayaranBriva,
-  deleteVaBri,
 } from "../controller/virtualAccountController.js";
 import { detailTagihan } from "../controller/detailTagihanController.js";
 
@@ -86,7 +85,6 @@ router.post("/bni", verifyToken,bniApi);
 router.post("/bni-inquiry", verifyToken, BniInquiry);
 router.post("/bri", verifyToken, briApi);
 router.post("/bri-inquiry", verifyToken, checkPembayaranBriva);
-router.delete("/bri-delete", verifyToken, deleteVaBri);
 router.get("/detail-tagihan/:tagihan_id", detailTagihan);
 
 router.post("/message", (req, res) => {

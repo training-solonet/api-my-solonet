@@ -7,6 +7,7 @@ import Product from "../models/Product.js";
 import axios from "axios";
 import qs from "qs";
 import dayjs from "dayjs";
+import { v4 as uuidv4 } from "uuid";
 import { error } from "console";
 
 export const bniApi = async (req, res) => {
@@ -189,14 +190,50 @@ export const BniInquiry = async (req, res) => {
   }
 };
 
+const deleteVirtualAccountBRI = async (tagihan_id, user, res) => {
+  const checkPembayaran = await CheckPembayaran.findOne({
+    where: { tagihan_id },
+  });
+  if (!checkPembayaran) {
+    return res.status(404).json({ message: "Check pembayaran not found" });
+  }
+
+  const partnerServiceId = "14948";
+  const phoneLast8Digits = user.phone_number.slice(-8);
+  const customerNo = `9087${phoneLast8Digits}`;
+  const virtualAccount = `${partnerServiceId}${customerNo}`;
+  const trx_id = checkPembayaran.trx_id;
+
+  try {
+    const response = await axios.delete(
+      `${process.env.BRI_API}delete-va?partnerServiceId=${encodeURIComponent(
+        partnerServiceId
+      )}&customerNo=${encodeURIComponent(
+        customerNo
+      )}&virtualAccountNo=${encodeURIComponent(
+        virtualAccount
+      )}&trxId=${encodeURIComponent(trx_id)}`,
+      {
+        headers: {
+          "X-Authorization": `${process.env.X_AUTH}`,
+        },
+      }
+    );
+
+    await CheckPembayaran.destroy({
+      where: { tagihan_id },
+    });
+
+    console.log("Virtual Account deleted successfully");
+    return response;
+  } catch (error) {
+    console.error("Error deleting virtual account:", error.message);
+    throw new Error("Failed to delete virtual account");
+  }
+};
+
 export const briApi = async (req, res) => {
-  const {
-    customer_id,
-    tagihan_id,
-    partnerServiceId,
-    totalAmount,
-    additionalInfo,
-  } = req.body;
+  const { customer_id, tagihan_id } = req.body;
 
   const user_id = req.user_id;
 
@@ -221,11 +258,22 @@ export const briApi = async (req, res) => {
 
     const tagihan = await Tagihan.findOne({
       where: {
+        id: tagihan_id,
         customer_id: customer_id,
       },
     });
     if (!tagihan) {
       return res.status(404).json({ message: "Tagihan not found" });
+    }
+
+    const product = await Product.findOne({
+      where: {
+        id: tagihan.product_id,
+      },
+    });
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
     }
 
     const existingCheckPembayaran = await CheckPembayaran.findOne({
@@ -234,12 +282,14 @@ export const briApi = async (req, res) => {
       },
     });
     if (existingCheckPembayaran) {
-      return res
-        .status(400)
-        .json({ message: "Virtual Account already exists" });
+      await deleteVirtualAccountBRI(tagihan_id, user, res);
     }
 
-    const phoneLast8Digits = user.phone_number.slice(-7);
+    const totalAmount = product.harga;
+    const description = `Pembayaran tagihan untuk produk ${product.nama}`;
+
+    const partnerServiceId = "   14948";
+    const phoneLast8Digits = user.phone_number.slice(-8);
     const customerNo = `9087${phoneLast8Digits}`;
     const virtualAccount = `${partnerServiceId}${customerNo}`;
     const now = new Date().toISOString();
@@ -258,60 +308,27 @@ export const briApi = async (req, res) => {
       virtualAccountNo: virtualAccount,
       virtualAccountName: nama,
       totalAmount: {
-        value: totalAmount.value,
-        currency: totalAmount.currency,
+        value: `${totalAmount.toString()}.00`,
+        currency: "IDR",
       },
       expiredDate: expiredDate,
       trxId: trxId,
       additionalInfo: {
-        description: additionalInfo.description,
+        description: description.toString(),
       },
     };
 
-    let response;
-
-    try {
-      response = await axios.post(
-        `https://aplikasi.solonet.net.id/bri/api/create-va`,
-        briPayload,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "X-Authorization":
-              "EMD3nAKY0T757NYCuq1uL6W1qvy7QkeSKGv1ZUxzKXp0lwcEHJIsVU1LTWpAnFxA",
-          },
-        }
-      );
-    } catch (error) {
-      if (
-        error.response &&
-        error.response.data.message ===
-          "Invalid Bill/Virtual Account already exist"
-      ) {
-        const randomSuffix = Math.floor(Math.random() * 1000)
-          .toString()
-          .padStart(1, "0");
-        customerNo += randomSuffix;
-        virtualAccount = `${partnerServiceId}${customerNo}`;
-
-        briPayload.customerNo = customerNo;
-        briPayload.virtualAccountNo = virtualAccount;
-
-        response = await axios.post(
-          `https://aplikasi.solonet.net.id/bri/api/create-va`,
-          briPayload,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              "X-Authorization":
-                "EMD3nAKY0T757NYCuq1uL6W1qvy7QkeSKGv1ZUxzKXp0lwcEHJIsVU1LTWpAnFxA",
-            },
-          }
-        );
-      } else {
-        throw error;
+    const response = await axios.post(
+      `${process.env.BRI_API}create-va`,
+      briPayload,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "X-Authorization":
+            process.env.X_AUTH,
+        },
       }
-    }
+    );
 
     await CheckPembayaran.create({
       tagihan_id: tagihan_id,
@@ -332,10 +349,10 @@ export const briApi = async (req, res) => {
 };
 
 export const checkPembayaranBriva = async (req, res) => {
-  const { customer_id, tagihan_id, partnerServiceId, inquiryRequestId } =
-    req.body;
+  const { customer_id, tagihan_id } = req.body;
 
   const user_id = req.user_id;
+  const inquiryRequestId = uuidv4();
 
   try {
     const customer = await Customer.findOne({
@@ -378,6 +395,8 @@ export const checkPembayaranBriva = async (req, res) => {
         message: "Virtual account not found or invalid in check pembayaran",
       });
     }
+
+    const partnerServiceId = "   14948";
     const customerNo = virtualAccountCustomer.slice(5);
     const virtualAccount = `${partnerServiceId}${customerNo}`;
 
@@ -389,13 +408,13 @@ export const checkPembayaranBriva = async (req, res) => {
     };
 
     const response = await axios.post(
-      `https://aplikasi.solonet.net.id/bri/api/inquiry-status`,
+      `${process.env.BRI_API}inquiry-status`,
       checkPayload,
       {
         headers: {
           "Content-Type": "application/json",
           "X-Authorization":
-            "EMD3nAKY0T757NYCuq1uL6W1qvy7QkeSKGv1ZUxzKXp0lwcEHJIsVU1LTWpAnFxA",
+            process.env.X_AUTH,
         },
       }
     );
@@ -428,84 +447,3 @@ export const checkPembayaranBriva = async (req, res) => {
   }
 };
 
-export const deleteVaBri = async (req, res) => {
-  const { customer_id, tagihan_id, partnerServiceId } = req.body;
-
-  const user_id = req.user_id;
-
-  try {
-    const customer = await Customer.findOne({
-      where: {
-        id: customer_id,
-      },
-    });
-    if (!customer) {
-      return res.status(404).json({ message: "Customer not found" });
-    }
-
-    const user = await User.findOne({
-      where: {
-        id: user_id,
-      },
-    });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const tagihan = await Tagihan.findOne({
-      where: {
-        customer_id: customer_id,
-      },
-    });
-    if (!tagihan) {
-      return res.status(404).json({ message: "Tagihan not found" });
-    }
-
-    const pembayaran = await CheckPembayaran.findOne({
-      where: {
-        tagihan_id: tagihan_id,
-      },
-    });
-    if (!pembayaran) {
-      return res.status(404).json({ message: "Pembayaran not found" });
-    }
-
-    const phoneLast8Digits = user.phone_number.slice(-8);
-    const customerNo = `9087${phoneLast8Digits}`;
-    const virtualAccount = `${partnerServiceId}${customerNo}`;
-    const trx_id = pembayaran.trx_id;
-
-    const deletePayload = {
-      partnerServiceId: partnerServiceId,
-      customerNo: customerNo,
-      virtualAccountNo: virtualAccount,
-      trxId: trx_id,
-    };
-
-    const response = await axios.delete(
-      `https://aplikasi.solonet.net.id/bri/api/delete-va`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "X-Authorization":
-            "EMD3nAKY0T757NYCuq1uL6W1qvy7QkeSKGv1ZUxzKXp0lwcEHJIsVU1LTWpAnFxA",
-        },
-        data: deletePayload,
-      }
-    );
-
-    await CheckPembayaran.destroy({
-      where: {
-        tagihan_id: tagihan_id,
-      },
-    });
-
-    res.status(response.status).json(response.data);
-  } catch (error) {
-    console.error("Error deleting virtual account:", error.message);
-    res.status(500).json({
-      message: "Failed to delete virtual account",
-      error: error.response ? error.response.data : error.message,
-    });
-  }
-};
