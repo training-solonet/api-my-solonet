@@ -173,7 +173,7 @@ export const BniInquiry = async (req, res) => {
     );
 
     const { data } = response.data;
-
+    
     if (data && data.va_status === "0") {
       await Pembayaran.create({
         tagihan_id: checkPembayaran.tagihan_id,
