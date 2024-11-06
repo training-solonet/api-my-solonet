@@ -12,7 +12,7 @@ const CheckPembayaran = db.define(
             allowNull: false,
             references: {
                 model: Tagihan,
-                key: "id",
+                key: "id_tagihan",
             },
         },
         trx_id: {
