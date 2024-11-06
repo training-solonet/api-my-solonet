@@ -174,7 +174,7 @@ export const BniInquiry = async (req, res) => {
 
     const { data } = response.data;
 
-    if (data && data.va_status === "0") {
+    if (data && data.payment_amount == total_tagihan) {
       await Pembayaran.create({
         tagihan_id: checkPembayaran.tagihan_id,
         trx_id: trx_id,
@@ -192,7 +192,7 @@ export const BniInquiry = async (req, res) => {
 
     res.status(response.status).json({
       data: response.data,
-      trx_amount: total_tagihan,
+      tagihan_id: tagihan_id,
     });
   } catch (error) {
     console.error("Error pada bniInquiry:", error);
