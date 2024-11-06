@@ -297,7 +297,8 @@ export const briApi = async (req, res) => {
     }
 
     const totalAmount = product.harga;
-    const description = `Pembayaran tagihan untuk produk ${product.nama}`;
+    const month = dayjs(tagihan.bulan).format("MMMM");
+    const description = `Pembayaran produk ${product.nama} bulan ${month}`;
 
     const partnerServiceId = "   14948";
     const phoneLast8Digits = user.phone_number.slice(-8);
@@ -325,7 +326,7 @@ export const briApi = async (req, res) => {
       expiredDate: expiredDate,
       trxId: trxId,
       additionalInfo: {
-        description: description.toString(),
+        description: description,
       },
     };
 
