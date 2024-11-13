@@ -1,6 +1,6 @@
 import { Sequelize } from "sequelize";
 import db from "../config/Database.js";
-import reg_provinces from "./provinsi.js"; // Pastikan ini diimpor jika ada relasi
+import reg_provinces from "./provinsi.js"; 
 
 const { DataTypes } = Sequelize;
 

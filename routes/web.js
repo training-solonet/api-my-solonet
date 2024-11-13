@@ -21,6 +21,7 @@ import {
   getKecamatanByKabupaten,
   getKelurahanByKecamatan,
   getProvinsi,
+  nearLocationStatis,
   userNearKantorLocation,
 } from "../controller/customerController.js";
 import { banner } from "../controller/bannerController.js";
@@ -28,7 +29,13 @@ import { paket } from "../controller/productController.js";
 import { tagihanUser } from "../controller/tagihanController.js";
 import { faq } from "../controller/faqController.js";
 import whatsappClient from "../controller/wwebController.js";
-
+import {
+  bniApi,
+  BniInquiry,
+  briApi,
+  checkPembayaranBriva,
+} from "../controller/virtualAccountController.js";
+import { detailTagihan } from "../controller/detailTagihanController.js";
 
 const router = express.Router();
 
@@ -53,10 +60,12 @@ router.get("/kabupaten/:provinsi_id", verifyToken, getKabupatenByProvinsi);
 router.get("/kecamatan/:kabupaten_id", verifyToken, getKecamatanByKabupaten);
 router.get("/kelurahan/:kecamatan_id", verifyToken, getKelurahanByKecamatan);
 router.post("/nearLocation", userNearKantorLocation);
+router.get("/nearLocationStatis", nearLocationStatis);
 
 // Product
 router.get("/paket", paket);
 router.get("/tagihan-user", verifyToken, tagihanUser);
+router.get("/detail-tagihan/:tagihan_id", detailTagihan);
 
 // Banner
 router.get("/banner", banner);
@@ -64,11 +73,26 @@ router.get("/banner", banner);
 // FAQ
 router.get("/faq", faq);
 
+// Whatsapp
 router.post("/message", (req, res) => {
   whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
   res.send();
 })
 
+// FAQ
+router.get("/faq", faq);
+
+//transaksi
+router.post("/bni", verifyToken,bniApi);
+router.post("/bni-inquiry", verifyToken, BniInquiry);
+router.post("/bri", verifyToken, briApi);
+router.post("/bri-inquiry", verifyToken, checkPembayaranBriva);
+router.get("/detail-tagihan/:tagihan_id", detailTagihan);
+
+router.post("/message", verifyToken, (req, res) => {
+  whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
+  res.send();
+});
 
 //google auth
 router.get(

@@ -8,7 +8,6 @@ import jwt from "jsonwebtoken";
 import cron from "node-cron";
 import { Op } from "sequelize";
 import { OAuth2Client } from "google-auth-library";
-import whatsappClient from "./wwebController.js";
 
 dotenv.config();
 const client = new OAuth2Client()
@@ -508,55 +507,13 @@ export const addPhoneNumber = async (req, res) => {
     user.otp = otp;
     user.otp_expiry = moment().add(5, "minutes").toDate();
     await user.save();
-
-    await axios.post(
-      "https://omnichannel.qiscus.com/whatsapp/v1/" +
-        process.env.QISCUS_APP_ID +
-        "/" +
-        process.env.WA_CHANNEL_ID +
-        "/messages",
-      {
-        to: phone_number,
-        type: "template",
-        template: {
-          namespace: process.env.WA_TEMPLATE_NAMESPACE,
-          name: process.env.WA_TEMPLATE_NAME,
-          language: {
-            policy: "deterministic",
-            code: "id",
-          },
-          components: [
-            {
-              type: "body",
-              parameters: [
-                {
-                  type: "text",
-                  text: otp,
-                },
-              ],
-            },
-            {
-              type: "button",
-              sub_type: "url",
-              index: "0",
-              parameters: [
-                {
-                  type: "text",
-                  text: otp,
-                },
-              ],
-            },
-          ],
-        },
-      },
-      {
-        headers: {
-          "Qiscus-App-Id": process.env.QISCUS_APP_ID,
-          "Qiscus-Secret-Key": process.env.QISCUS_SECRET_KEY,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    
+    const message = `Your OTP is: ${otp}. 
+It will expire in 5 minutes.`;
+    await axios.post("https://api.connectis.my.id/message", {
+      phoneNumber: `${phone_number}@c.us`,
+      message,
+    });
 
     res.status(200).json({
       success: true,

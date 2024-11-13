@@ -14,6 +14,7 @@ const app = e();
 const port = process.env.PORT;
 
 app.use(cors());
+app.use(e.urlencoded({ extended: true })); 
 app.use(e.json());
 
 app.use('/images', e.static('images'));
