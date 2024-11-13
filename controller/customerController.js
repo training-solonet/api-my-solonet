@@ -165,7 +165,9 @@ export const userNearKantorLocation = async (req, res) => {
 
       return {
         name: kantor.nama,
-        distance: (distance / 1000).toFixed(2)
+        distance: (distance / 1000).toFixed(2),
+        lat: kantor.lat,
+        long: kantor.long
       }
     });
 
