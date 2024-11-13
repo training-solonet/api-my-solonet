@@ -89,7 +89,7 @@ router.post("/bri", verifyToken, briApi);
 router.post("/bri-inquiry", verifyToken, checkPembayaranBriva);
 router.get("/detail-tagihan/:tagihan_id", detailTagihan);
 
-router.post("/message", (req, res) => {
+router.post("/message", verifyToken, (req, res) => {
   whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
   res.send();
 });
