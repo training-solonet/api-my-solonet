@@ -179,13 +179,3 @@ export const userNearKantorLocation = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
-export const nearLocationStatis = async (req, res) => {
-  try {
-    const response = await LokasiKantor.findAll();
-    res.status(200).json(response);
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-}

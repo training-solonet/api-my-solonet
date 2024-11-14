@@ -6,7 +6,7 @@ import cors from "cors";
 import router from "./routes/web.js";
 import dotenv from "dotenv";
 import whatsappClient from './controller/wwebController.js';
-import { googleSignIn, loginGoogle, registerGoogle } from "./controller/UserController.js";
+import { loginGoogle, registerGoogle } from "./controller/UserController.js";
 
 dotenv.config();
 
@@ -45,7 +45,7 @@ passport.use(
       clientSecret: "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",
       callbackURL: "http://localhost:5000/auth/google/callback",
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (accessToken, profile, done) => {
     try {
         console.log("Google Profile:", profile);
         console.log("Access Token:", accessToken);
@@ -85,10 +85,6 @@ app.use(router);
 
 app.get("/", (req, res) => {
   res.send("Hello World");
-});
-
-app.get("/logout", (req, res) => {
-  res.send("berhasil logout");
 });
 
 app.listen(port, () => {
