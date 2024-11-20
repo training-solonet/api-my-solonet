@@ -35,6 +35,7 @@ import {
   checkPembayaranBriva,
 } from "../controller/virtualAccountController.js";
 import { detailTagihan } from "../controller/detailTagihanController.js";
+import { coverage2km, getKoordinatBts } from "../controller/mapController.js";
 
 const router = express.Router();
 
@@ -59,6 +60,9 @@ router.get("/kabupaten/:provinsi_id", verifyToken, getKabupatenByProvinsi);
 router.get("/kecamatan/:kabupaten_id", verifyToken, getKecamatanByKabupaten);
 router.get("/kelurahan/:kecamatan_id", verifyToken, getKelurahanByKecamatan);
 router.post("/nearLocation", userNearKantorLocation);
+router.get("/nearLocationStatis", nearLocationStatis);
+router.get("/bts-location", getKoordinatBts)
+router.post("/coverage-bts", coverage2km);
 
 // Product
 router.get("/paket", paket);
