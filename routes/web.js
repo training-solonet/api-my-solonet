@@ -60,7 +60,6 @@ router.get("/kabupaten/:provinsi_id", verifyToken, getKabupatenByProvinsi);
 router.get("/kecamatan/:kabupaten_id", verifyToken, getKecamatanByKabupaten);
 router.get("/kelurahan/:kecamatan_id", verifyToken, getKelurahanByKecamatan);
 router.post("/nearLocation", userNearKantorLocation);
-router.get("/nearLocationStatis", nearLocationStatis);
 router.get("/bts-location", getKoordinatBts)
 router.post("/coverage-bts", coverage2km);
 
