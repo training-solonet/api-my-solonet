@@ -21,7 +21,6 @@ import {
   getKecamatanByKabupaten,
   getKelurahanByKecamatan,
   getProvinsi,
-  nearLocationStatis,
   userNearKantorLocation,
 } from "../controller/customerController.js";
 import { banner } from "../controller/bannerController.js";
@@ -77,7 +76,7 @@ router.get("/banner", banner);
 router.get("/faq", faq);
 
 // Whatsapp
-router.post("/message", (req, res) => {
+router.post("/message", verifyToken, (req, res) => {
   whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
   res.send();
 })
@@ -122,11 +121,5 @@ router.get(
     }
   }
 );
-
-router.get("/logout", (req, res) => {
-  req.logout(() => {
-    res.redirect("/logout");
-  });
-});
 
 export default router;
