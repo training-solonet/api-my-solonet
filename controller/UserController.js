@@ -529,6 +529,27 @@ It will expire in 5 minutes.`;
   }
 };
 
+export const changeProfile = async (req, res) => {
+  const { name, phone_number, email } = req.body;
+
+  try {
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.name = name;
+    user.phone_number = phone_number;
+    await user.save();
+
+    return res.status(200).json({ message: "Profile updated" });
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
 cron.schedule("*/5 * * * *", async () => {
   try {
     const expiredUsers = await User.findAll({
