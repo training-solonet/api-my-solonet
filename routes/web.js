@@ -72,7 +72,7 @@ router.get("/banner", banner);
 router.get("/faq", faq);
 
 // Whatsapp
-router.post("/message", verifyToken, (req, res) => {
+router.post("/message", (req, res) => {
   whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
   res.send();
 })
