@@ -53,12 +53,17 @@ export const getKelurahanByKecamatan = async (req, res) => {
 };
 
 export const getCustomer = async (req, res) => {
+  const userToken = req.user;
+  const userId = userToken.id;
+
   try {
-    const response = await Customer.findAll();
-    res.status(200).json(response);
+    const customers = await Customer.findAll({
+      where: { user_id: userId },
+    });
+
+    res.json(customers);
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Internal server error" });
+    res.status(500).json({ message: error.message });
   }
 };
 
