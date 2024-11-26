@@ -525,52 +525,6 @@ It will expire in 5 minutes.`;
   }
 };
 
-// export const addEmail = async (req, res) => {
-//   const { email } = req.body;
-
-//   const user = await User.findOne({ where: { email } });
-
-//   try {
-//     const user = await User.findOne({ where: { email } });
-
-//     if (user) {
-//       return res.status(400).json({ message: "Email already in use" });
-//     }
-
-//     const otp = crypto.randomInt(100000, 999999).toString();
-//     const otpExpiry = moment().add(5, "minutes").toDate();
-
-//     await User.update({
-//       email,
-//       otp,
-//       otp_expiry: otpExpiry,
-//       email_verified: false,
-//     });
-
-//     const mailOptions = {
-//       from: process.env.GMAIL_USER,
-//       to: email,
-//       subject: "Email Verification",
-//       text: `Your OTP is: ${otp}. It will expire in 5 minutes.`,
-//     };
-
-//     const transporter = nodemailer.createTransport({
-//       service: "gmail",
-//       auth: {
-//         user: process.env.GMAIL_USER,
-//         pass: process.env.GMAIL_PASS,
-//       }
-//     });
-
-//     await transporter.sendMail(mailOptions);
-
-//     return res.status(200).json({ message: "OTP sent" });
-//   } catch (error) {
-//     console.error("Error sending email OTP:", error);
-//     return res.status(500).json({ message: "Internal server error" });
-//   }
-// }
-
 export const addEmail = async (req, res) => {
   const { email } = req.body;
   const userId = req.user.id;
@@ -657,13 +611,22 @@ export const verifyEmailOtp = async (req, res) => {
 }
 
 export const changeProfile = async (req, res) => {
+
+  const Userid = req.user.id;
   const { name, phone_number, email } = req.body;
 
   try {
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { id: Userid } });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    if (email && email !== user.email) {
+      const existingEmail = await User.findOne({ where: { email } });
+      if (existingEmail) {
+        return res.status(400).json({ message: "Email is already in use" });
+      }
     }
 
     user.name = name;
