@@ -23,10 +23,6 @@ const User = db.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
-    confirm_password: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
     otp: {
       type: DataTypes.INTEGER,
     },
