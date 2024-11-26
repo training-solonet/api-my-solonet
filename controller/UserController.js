@@ -524,14 +524,24 @@ It will expire in 5 minutes.`;
   }
 };
 
+
 export const changeProfile = async (req, res) => {
+
+  const Userid = req.user.id;
   const { name, phone_number, email } = req.body;
 
   try {
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { id: Userid } });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    if (email && email !== user.email) {
+      const existingEmail = await User.findOne({ where: { email } });
+      if (existingEmail) {
+        return res.status(400).json({ message: "Email is already in use" });
+      }
     }
 
     user.name = name;
