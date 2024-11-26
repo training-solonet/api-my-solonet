@@ -133,7 +133,7 @@ export const registerGoogle = async (profile) => {
 };
 
 export const login = async (req, res) => {
-  const { name, phone_number, password } = req.body;
+  const { phone_number, password } = req.body;
 
   try {
     const user = await User.findOne({ where: { phone_number } });
@@ -173,7 +173,7 @@ export const loginGoogle = async (profile) => {
     const user = await User.findOne({ where: { google_id: profile.id } });
 
     if (!user) {
-      user = await User.findOne({ where: { email: profile.emails[0].value } });
+      const user = await User.findOne({ where: { email: profile.emails[0].value } });
 
       if (user && !user.google_id) {
         user.google_id = profile.id;
@@ -263,7 +263,7 @@ export const getUser = async (req, res) => {
       }
       res.json(user);
     })
-    .catch((err) => res.status(500).json({ message: "Internal server error" }));
+    .catch(() => res.status(500).json({ message: "Internal server error" }));
 };
 
 export const getUserById = async (req, res) => {
@@ -275,7 +275,7 @@ export const getUserById = async (req, res) => {
     }
     return res.status(200).json(user);
   } catch (error) {
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: error.message });
   }
 };
 
@@ -359,7 +359,9 @@ It will expire in 5 minutes.`;
       })
 
     return res.status(200).json({ message: "OTP sent" });
-  } catch (error) {}
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
 };
 
 export const resetPassword = async (req, res) => {
