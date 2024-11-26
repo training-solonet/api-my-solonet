@@ -12,6 +12,8 @@ import {
   resetPassword,
   addPhoneNumber,
   googleSignIn,
+  addEmail,
+  verifyEmailOtp,
 } from "../controller/UserController.js";
 import { verifyToken } from "./middleware/middleware.js";
 import {
@@ -51,6 +53,8 @@ router.post("/reset-password", resetPassword);
 router.put("/updateUser/:id", verifyToken, updateUser);
 router.post("/verify-number", addPhoneNumber);
 router.post("/google", googleSignIn);
+router.post("/add-email", verifyToken, addEmail);
+router.post("/verify-email", verifyToken, verifyEmailOtp);
 
 // Customer
 router.get("/customer", verifyToken, getCustomer);

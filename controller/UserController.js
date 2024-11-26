@@ -6,6 +6,7 @@ import moment from "moment";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import cron from "node-cron";
+import nodemailer from "nodemailer";
 import { Op } from "sequelize";
 import { OAuth2Client } from "google-auth-library";
 
@@ -133,13 +134,13 @@ export const registerGoogle = async (profile) => {
 };
 
 export const login = async (req, res) => {
-  const { name, phone_number, password } = req.body;
+  const { phone_number, password } = req.body;
 
   try {
     const user = await User.findOne({ where: { phone_number } });
 
     if (!user) {
-      return res.status(404).json({ message: "Email wrong or not found" });
+      return res.status(404).json({ message: "phone number wrong" });
     }
 
     if (!user.verified) {
@@ -521,6 +522,137 @@ It will expire in 5 minutes.`;
     });
   }
 };
+
+// export const addEmail = async (req, res) => {
+//   const { email } = req.body;
+
+//   const user = await User.findOne({ where: { email } });
+
+//   try {
+//     const user = await User.findOne({ where: { email } });
+
+//     if (user) {
+//       return res.status(400).json({ message: "Email already in use" });
+//     }
+
+//     const otp = crypto.randomInt(100000, 999999).toString();
+//     const otpExpiry = moment().add(5, "minutes").toDate();
+
+//     await User.update({
+//       email,
+//       otp,
+//       otp_expiry: otpExpiry,
+//       email_verified: false,
+//     });
+
+//     const mailOptions = {
+//       from: process.env.GMAIL_USER,
+//       to: email,
+//       subject: "Email Verification",
+//       text: `Your OTP is: ${otp}. It will expire in 5 minutes.`,
+//     };
+
+//     const transporter = nodemailer.createTransport({
+//       service: "gmail",
+//       auth: {
+//         user: process.env.GMAIL_USER,
+//         pass: process.env.GMAIL_PASS,
+//       }
+//     });
+
+//     await transporter.sendMail(mailOptions);
+
+//     return res.status(200).json({ message: "OTP sent" });
+//   } catch (error) {
+//     console.error("Error sending email OTP:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// }
+
+export const addEmail = async (req, res) => {
+  const { email } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const existingEmail = await User.findOne({ where: { email } });
+    if (existingEmail) {
+      return res.status(400).json({ message: "Email is already in use" });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpiry = moment().add(5, "minutes").toDate();
+
+    user.email = email;
+    user.otp = otp;
+    user.otp_expiry = otpExpiry;
+    user.email_verified = 0;
+    await user.save();
+
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: email,
+      subject: "Email Verification",
+      text: `Your OTP is: ${otp}. It will expire in 5 minutes.`,
+    };
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth:
+      {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+      }
+    });
+
+    await transporter.sendMail(mailOptions);
+
+    return res.status(200).json({ message: "OTP sent" });
+  } catch (error) {
+    console.error("Error adding email:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export const verifyEmailOtp = async (req, res) => {
+  const { email, otp } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (moment().isAfter(user.otp_expiry)) {
+      user.otp = null;
+      user.otp_expiry = null;
+      await user.save();
+
+      return res.status(400).json({ message: "OTP has expired" });
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    user.email_verified = 1;
+    user.otp = null;
+    user.otp_expiry = null;
+    await user.save();
+
+    return res.status(200).json({ message: "Email verified" });
+  } catch (error) {
+    console.error("Error verifying email OTP:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
 
 export const changeProfile = async (req, res) => {
   const { name, phone_number, email } = req.body;
