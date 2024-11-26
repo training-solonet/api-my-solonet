@@ -28,7 +28,7 @@ async function verifyGoogleToken(token) {
 }
 
 export const register = async (req, res) => {
-  const { name, phone_number, email, password, confirm_password } = req.body;
+  const { name, phone_number, password, confirm_password } = req.body;
 
   if (password.length <= 6) {
     return res
@@ -41,12 +41,6 @@ export const register = async (req, res) => {
   }
 
   try {
-    const existingEmail = await User.findOne({ where: { email } });
-    if (existingEmail && existingEmail.verified) {
-      return res
-        .status(400)
-        .json({ message: "Email is already in use and verified" });
-    }
 
     const existingPhoneNumber = await User.findOne({ where: { phone_number } });
     if (existingPhoneNumber && existingPhoneNumber.verified) {
@@ -55,8 +49,8 @@ export const register = async (req, res) => {
         .json({ message: "Phone number is already in use and verified" });
     }
 
-    if (existingEmail || existingPhoneNumber) {
-      const user = existingEmail || existingPhoneNumber;
+    if (existingPhoneNumber) {
+      const user = existingPhoneNumber;
 
       const otp = crypto.randomInt(100000, 999999).toString();
       const otpExpiry = moment().add(5, "minutes").toDate();
@@ -87,7 +81,6 @@ It will expire in 5 minutes.`;
     await User.create({
       name,
       phone_number,
-      email,
       password: hashedPassword,
       otp: otp,
       otp_expiry: otpExpiry,
@@ -140,10 +133,10 @@ export const registerGoogle = async (profile) => {
 };
 
 export const login = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, phone_number, password } = req.body;
 
   try {
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { phone_number } });
 
     if (!user) {
       return res.status(404).json({ message: "Email wrong or not found" });
@@ -159,14 +152,14 @@ export const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, nama: user.name, email: user.email },
+      { id: user.id, nama: user.name, phone_number: user.phone_number },
       process.env.JWT_SECRET,
       { expiresIn: 86400 }
     );
 
     return res.status(200).json({
       message: "Login successful ",
-      user: { id: user.id, nama: user.name, email: user.email },
+      user: { id: user.id, nama: user.name, phone_number: user.phone_number },
       token: token,
     });
   } catch (error) {
