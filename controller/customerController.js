@@ -6,6 +6,7 @@ import reg_villages from "../models/kelurahan.js";
 import LokasiKantor from "../models/lokasi_kantor.js";
 import haversine from "haversine-distance";
 import Tagihan from "../models/tagihan.js";
+import User from "../models/User.js";
 
 export const getProvinsi = async (req, res) => {
   try {
@@ -151,6 +152,48 @@ export const addCustomer = async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 };
+
+export const addAddress = async (req, res) => {
+  const { nama, nik, provinsi_id, kabupaten_id, kecamatan_id, kelurahan_id, alamat, lat, long } = req.body;
+  const UserId = req.user.id;
+
+  try {
+    const user = await User.findOne({ where: { id: UserId } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const data = {
+      user_id: UserId,
+      nama, 
+      nik,
+      provinsi_id,
+      kabupaten_id,
+      kecamatan_id,
+      kelurahan_id,
+      alamat,
+      lat,
+      long,
+    };
+
+    await Customer.create(data);
+
+    const lati = parseFloat(lat);
+    const lon = parseFloat(long);
+
+    if (isNaN(lati) || isNaN(lon)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid latitude or longitude values." });
+    }
+   
+    return res.status(200).json({ message: "Success" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: error.message });
+  }
+}
 
 export const userNearKantorLocation = async (req, res) => {
   const { lat, long } = req.body;

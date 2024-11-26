@@ -18,6 +18,7 @@ import {
 } from "../controller/UserController.js";
 import { verifyToken } from "./middleware/middleware.js";
 import {
+  addAddress,
   addCustomer,
   getCustomer,
   getKabupatenByProvinsi,
@@ -61,6 +62,7 @@ router.post("/verify-email", verifyToken, verifyEmailOtp);
 // Customer
 router.get("/customer", verifyToken, getCustomer);
 router.post("/customer", addCustomer);
+router.post("/add-address", verifyToken, addAddress);
 router.get("/provinsi", verifyToken, getProvinsi);
 router.get("/kabupaten/:provinsi_id", verifyToken, getKabupatenByProvinsi);
 router.get("/kecamatan/:kabupaten_id", verifyToken, getKecamatanByKabupaten);
