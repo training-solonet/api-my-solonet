@@ -12,6 +12,7 @@ import {
   resetPassword,
   addPhoneNumber,
   googleSignIn,
+  changeProfile,
 } from "../controller/UserController.js";
 import { verifyToken } from "./middleware/middleware.js";
 import {
@@ -49,6 +50,7 @@ router.post("/verify-otp", verifyOtp);
 router.post("/request-otp", resetPasswordRequest);
 router.post("/reset-password", resetPassword);
 router.put("/updateUser/:id", verifyToken, updateUser);
+router.put("/change-profile", verifyToken, changeProfile);
 router.post("/verify-number", addPhoneNumber);
 router.post("/google", googleSignIn);
 
