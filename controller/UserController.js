@@ -6,6 +6,7 @@ import moment from "moment";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import cron from "node-cron";
+import nodemailer from "nodemailer";
 import { Op } from "sequelize";
 import { OAuth2Client } from "google-auth-library";
 
@@ -28,7 +29,7 @@ async function verifyGoogleToken(token) {
 }
 
 export const register = async (req, res) => {
-  const { name, phone_number, email, password, confirm_password } = req.body;
+  const { name, phone_number, password, confirm_password } = req.body;
 
   if (password.length <= 6) {
     return res
@@ -41,12 +42,6 @@ export const register = async (req, res) => {
   }
 
   try {
-    const existingEmail = await User.findOne({ where: { email } });
-    if (existingEmail && existingEmail.verified) {
-      return res
-        .status(400)
-        .json({ message: "Email is already in use and verified" });
-    }
 
     const existingPhoneNumber = await User.findOne({ where: { phone_number } });
     if (existingPhoneNumber && existingPhoneNumber.verified) {
@@ -55,8 +50,8 @@ export const register = async (req, res) => {
         .json({ message: "Phone number is already in use and verified" });
     }
 
-    if (existingEmail || existingPhoneNumber) {
-      const user = existingEmail || existingPhoneNumber;
+    if (existingPhoneNumber) {
+      const user = existingPhoneNumber;
 
       const otp = crypto.randomInt(100000, 999999).toString();
       const otpExpiry = moment().add(5, "minutes").toDate();
@@ -87,7 +82,6 @@ It will expire in 5 minutes.`;
     await User.create({
       name,
       phone_number,
-      email,
       password: hashedPassword,
       otp: otp,
       otp_expiry: otpExpiry,
@@ -140,13 +134,13 @@ export const registerGoogle = async (profile) => {
 };
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { phone_number, password } = req.body;
 
   try {
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({ where: { phone_number } });
 
     if (!user) {
-      return res.status(404).json({ message: "Email wrong or not found" });
+      return res.status(404).json({ message: "phone number wrong" });
     }
 
     if (!user.verified) {
@@ -159,14 +153,14 @@ export const login = async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, nama: user.name, email: user.email },
+      { id: user.id, nama: user.name, phone_number: user.phone_number },
       process.env.JWT_SECRET,
       { expiresIn: 86400 }
     );
 
     return res.status(200).json({
       message: "Login successful ",
-      user: { id: user.id, nama: user.name, email: user.email },
+      user: { id: user.id, nama: user.name, phone_number: user.phone_number },
       token: token,
     });
   } catch (error) {
@@ -531,14 +525,108 @@ It will expire in 5 minutes.`;
   }
 };
 
-export const changeProfile = async (req, res) => {
-  const { name, phone_number, email } = req.body;
+export const addEmail = async (req, res) => {
+  const { email } = req.body;
+  const userId = req.user.id;
 
   try {
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findByPk(userId);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+
+    const existingEmail = await User.findOne({ where: { email } });
+    if (existingEmail) {
+      return res.status(400).json({ message: "Email is already in use" });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpiry = moment().add(5, "minutes").toDate();
+
+    user.email = email;
+    user.otp = otp;
+    user.otp_expiry = otpExpiry;
+    user.email_verified = 0;
+    await user.save();
+
+    const mailOptions = {
+      from: process.env.GMAIL_USER,
+      to: email,
+      subject: "Email Verification",
+      text: `Your OTP is: ${otp}. It will expire in 5 minutes.`,
+    };
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth:
+      {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS,
+      }
+    });
+
+    await transporter.sendMail(mailOptions);
+
+    return res.status(200).json({ message: "OTP sent" });
+  } catch (error) {
+    console.error("Error adding email:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export const verifyEmailOtp = async (req, res) => {
+  const { email, otp } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (moment().isAfter(user.otp_expiry)) {
+      user.otp = null;
+      user.otp_expiry = null;
+      await user.save();
+
+      return res.status(400).json({ message: "OTP has expired" });
+    }
+
+    if (user.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    user.email_verified = 1;
+    user.otp = null;
+    user.otp_expiry = null;
+    await user.save();
+
+    return res.status(200).json({ message: "Email verified" });
+  } catch (error) {
+    console.error("Error verifying email OTP:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export const changeProfile = async (req, res) => {
+
+  const Userid = req.user.id;
+  const { name, phone_number, email } = req.body;
+
+  try {
+    const user = await User.findOne({ where: { id: Userid } });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (email && email !== user.email) {
+      const existingEmail = await User.findOne({ where: { email } });
+      if (existingEmail) {
+        return res.status(400).json({ message: "Email is already in use" });
+      }
     }
 
     user.name = name;
