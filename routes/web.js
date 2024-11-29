@@ -25,6 +25,7 @@ import {
   getKecamatanByKabupaten,
   getKelurahanByKecamatan,
   getProvinsi,
+  updateCustomer,
   userNearKantorLocation,
 } from "../controller/customerController.js";
 import { banner } from "../controller/bannerController.js";
@@ -70,6 +71,7 @@ router.get("/kelurahan/:kecamatan_id", verifyToken, getKelurahanByKecamatan);
 router.post("/nearLocation", userNearKantorLocation);
 router.get("/bts-location", getKoordinatBts)
 router.post("/coverage-bts", coverage2km);
+router.put("/update-customer/:id", verifyToken, updateCustomer);
 
 // Product
 router.get("/paket", paket);

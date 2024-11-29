@@ -124,37 +124,24 @@ export const addCustomer = async (req, res) => {
         tagihan: tagihan,
       });
     }
-
-    try {
-      const locationResponse = await fetch(geocodeUrl, { timeout: 5000 });
-      const locationData = await locationResponse.json();
-
-      if (locationResponse.ok) {
-        res.status(200).json({
-          customer: response,
-          location: locationData.display_name,
-        });
-      } else {
-        res.status(200).json({
-          customer: response,
-          location: locationData.error || "Location not found",
-        });
-      }
-    } catch (geocodeError) {
-      console.error("Geocode fetch error:", geocodeError);
-      res.status(200).json({
-        customer: response,
-        location: "Geocoding service unavailable",
-      });
-    }
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({ error: error.message });
+    console.error(error);
+    res.status(500).json({ message: error.message });
   }
 };
 
 export const addAddress = async (req, res) => {
-  const { nama, nik, provinsi_id, kabupaten_id, kecamatan_id, kelurahan_id, alamat, lat, long } = req.body;
+  const {
+    nama,
+    nik,
+    provinsi_id,
+    kabupaten_id,
+    kecamatan_id,
+    kelurahan_id,
+    alamat,
+    lat,
+    long,
+  } = req.body;
   const UserId = req.user.id;
 
   try {
@@ -166,7 +153,7 @@ export const addAddress = async (req, res) => {
 
     const data = {
       user_id: UserId,
-      nama, 
+      nama,
       nik,
       provinsi_id,
       kabupaten_id,
@@ -187,25 +174,27 @@ export const addAddress = async (req, res) => {
         .status(400)
         .json({ message: "Invalid latitude or longitude values." });
     }
-   
+
     return res.status(200).json({ message: "Success" });
   } catch (error) {
     console.log(error);
     return res.status(500).json({ error: error.message });
   }
-}
+};
 
 export const userNearKantorLocation = async (req, res) => {
   const { lat, long } = req.body;
 
   try {
     if (!lat || !long) {
-      return res.status(400).json({ message: "Latitude and longitude required" });
+      return res
+        .status(400)
+        .json({ message: "Latitude and longitude required" });
     }
 
     const kantorLocations = await LokasiKantor.findAll();
 
-    const distances = kantorLocations.map(kantor => {
+    const distances = kantorLocations.map((kantor) => {
       const userLocation = { lat: lat, lon: long };
       const kantorLocation = { lat: kantor.lat, lon: kantor.long };
 
@@ -215,8 +204,8 @@ export const userNearKantorLocation = async (req, res) => {
         name: kantor.nama,
         distance: (distance / 1000).toFixed(2),
         lat: kantor.lat,
-        long: kantor.long
-      }
+        long: kantor.long,
+      };
     });
 
     const nearestKantor = distances.sort((a, b) => a.distance - b.distance);
@@ -225,5 +214,35 @@ export const userNearKantorLocation = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const updateCustomer = async (req, res) => {
+  const { id } = req.params;
+  const { nama, nik, provinsi_id, kabupaten_id, kecamatan_id, kelurahan_id, alamat, lat, long, product_id } = req.body;
+
+  try {
+    const customer = await Customer.findByPk(id);
+
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    customer.nama = nama || customer.nama;
+    customer.nik = nik || customer.nik;
+    customer.provinsi_id = provinsi_id || customer.provinsi_id;
+    customer.kabupaten_id = kabupaten_id || customer.kabupaten_id;
+    customer.kecamatan_id = kecamatan_id || customer.kecamatan_id;
+    customer.kelurahan_id = kelurahan_id || customer.kelurahan_id;
+    customer.alamat = alamat || customer.alamat;
+    customer.lat = lat || customer.lat;
+    customer.long = long || customer.long;
+    customer.product_id = product_id || customer.product_id;
+
+    await customer.save();
+
+    return res.status(200).json({ message: "Customer updated successfully", data: customer });
+  } catch (error) {
+    return res.status(500).json({ message: "Server error", error: error.message });
   }
 };

@@ -576,7 +576,7 @@ export const addEmail = async (req, res) => {
 }
 
 export const verifyEmailOtp = async (req, res) => {
-  const { email, otp } = req.body;
+  const { otp } = req.body;
   const userId = req.user.id;
 
   try {

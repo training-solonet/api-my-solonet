@@ -17,7 +17,7 @@ const Customer = db.define(
       allowNull: false,
     },
     nama: DataTypes.STRING,
-    nik: DataTypes.INTEGER,
+    nik: DataTypes.STRING,
     provinsi_id: DataTypes.INTEGER,
     kabupaten_id: DataTypes.INTEGER,
     kecamatan_id: DataTypes.INTEGER,
