@@ -10,8 +10,6 @@ import {
   resetPassword,
   addPhoneNumber,
   googleSignIn,
-  addEmail,
-  verifyEmailOtp,
   changeProfile,
 } from "../controller/UserController.js";
 import { verifyToken } from "./middleware/middleware.js";
@@ -53,8 +51,6 @@ router.put("/updateUser/:id", verifyToken, updateUser);
 router.put("/change-profile", verifyToken, changeProfile);
 router.post("/verify-number", addPhoneNumber);
 router.post("/google", googleSignIn);
-router.post("/add-email", verifyToken, addEmail);
-router.post("/verify-email", verifyToken, verifyEmailOtp);
 
 // Customer
 router.get("/customer", verifyToken, getCustomer);
