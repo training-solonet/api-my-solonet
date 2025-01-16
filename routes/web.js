@@ -1,9 +1,7 @@
 import express from "express";
-import passport from "passport";
 import {
   login,
   register,
-  getUser,
   getUserById,
   updateUser,
   sendOtp,
@@ -44,7 +42,6 @@ import { coverage2km, getKoordinatBts } from "../controller/mapController.js";
 const router = express.Router();
 
 // User
-router.get("/users", verifyToken, getUser);
 router.get("/users/:id", verifyToken, getUserById);
 router.post("/register", register);
 router.post("/login", login);
@@ -74,7 +71,7 @@ router.post("/coverage-bts", coverage2km);
 // Product
 router.get("/paket", paket);
 router.get("/tagihan-user", verifyToken, tagihanUser);
-router.get("/detail-tagihan/:tagihan_id", detailTagihan);
+router.get("/detail-tagihan/:tagihan_id", verifyToken, detailTagihan);
 
 // Banner
 router.get("/banner", banner);
@@ -92,41 +89,16 @@ router.post("/message", (req, res) => {
 router.get("/faq", faq);
 
 //transaksi
-router.post("/bni", verifyToken,bniApi);
+router.post("/bni", verifyToken, bniApi);
 router.post("/bni-inquiry", verifyToken, BniInquiry);
 router.post("/bri", verifyToken, briApi);
 router.post("/bri-inquiry", verifyToken, checkPembayaranBriva);
-router.get("/detail-tagihan/:tagihan_id", detailTagihan);
+router.get("/detail-tagihan/:tagihan_id", verifyToken, detailTagihan);
 
-router.post("/message", verifyToken, (req, res) => {
+// Whatsapp
+router.post("/message", (req, res) => {
   whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
   res.send();
-});
-
-//google auth
-router.get(
-  "/auth/google",
-  passport.authenticate("google", {
-    scope: ["profile", "email"],
-  })
-);
-
-router.get(
-  "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }),
-  (req, res) => {
-    const { token, user } = req.user;
-
-    if (user.isNewUser) {
-      res.redirect("/verify-number");
-    } else {
-      res.status(200).json({
-        message: "Success",
-        token,
-        user,
-      });
-    }
-  }
-);
+})
 
 export default router;

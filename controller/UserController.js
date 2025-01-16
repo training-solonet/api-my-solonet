@@ -9,6 +9,7 @@ import cron from "node-cron";
 import nodemailer from "nodemailer";
 import { Op } from "sequelize";
 import { OAuth2Client } from "google-auth-library";
+import whatsappClient from "../controller/wwebController.js";
 
 dotenv.config();
 const client = new OAuth2Client()
@@ -61,12 +62,11 @@ export const register = async (req, res) => {
         otp_expiry: otpExpiry,
       });
 
-      const message = `Your OTP is: ${otp}. 
-It will expire in 5 minutes.`;
-      await axios.post("https://api.connectis.my.id/message", {
-        phoneNumber: `${phone_number}@c.us`,
-        message,
-      })
+      const message = `Kode *OTP* : ${otp}. 
+Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa dalam 5 menit.`;
+      const phoneNumber = `${phone_number}@c.us`;
+
+      whatsappClient.sendMessage(phoneNumber, message);
 
       return res
         .status(200)
@@ -88,12 +88,11 @@ It will expire in 5 minutes.`;
       verified: false,
     });
 
-    const message = `Your OTP is: ${otp}. 
-It will expire in 5 minutes.`;
-      await axios.post("https://api.connectis.my.id/message", {
-        phoneNumber: `${phone_number}@c.us`,
-        message,
-      })
+    const message = `Kode *OTP* : ${otp}. 
+Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa dalam 5 menit.`;
+    const phoneNumber = `${phone_number}@c.us`;
+
+    whatsappClient.sendMessage(phoneNumber, message);
 
     return res.status(201).json({
       message: "User created successfully. Please verify your number",
@@ -254,19 +253,6 @@ export const googleSignIn = async (req, res) => {
   }
 };
 
-export const getUser = async (req, res) => {
-  const userId = req.user.id;
-
-  User.findByPk(userId)
-    .then((user) => {
-      if (!user) {
-        res.status(404).json({ message: "User not found" });
-      }
-      res.json(user);
-    })
-    .catch(() => res.status(500).json({ message: "Internal server error" }));
-};
-
 export const getUserById = async (req, res) => {
   const { id } = req.params;
   try {
@@ -352,12 +338,11 @@ export const resetPasswordRequest = async (req, res) => {
     user.verified = false;
     await user.save();
 
-    const message = `Your OTP is: ${otp}. 
-It will expire in 5 minutes.`;
-      await axios.post("https://api.connectis.my.id/message", {
-        phoneNumber: `${phone_number}@c.us`,
-        message,
-      })
+    // Whatsapp
+router.post("/message", (req, res) => {
+  whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
+  res.send();
+})
 
     return res.status(200).json({ message: "OTP sent" });
   } catch (error) {
@@ -431,12 +416,11 @@ export const sendOtp = async (req, res) => {
     user.otp_expiry = moment().add(5, "minutes").toDate();
     await user.save();
 
-    const message = `Your OTP is: ${otp}. 
-It will expire in 5 minutes.`;
-    await axios.post("https://api.connectis.my.id/message", {
-      phoneNumber: `${phone_number}@c.us`,
-      message,
-    });
+    const message = `Kode *OTP* : ${otp}. 
+Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa dalam 5 menit.`;
+    const phoneNumber = `${phone_number}@c.us`;
+
+    whatsappClient.sendMessage(phoneNumber, message);
 
     res.json({
       phone_number,
@@ -486,130 +470,6 @@ export const verifyOtp = async (req, res) => {
   }
 };
 
-export const addPhoneNumber = async (req, res) => {
-  const { phone_number, email } = req.body;
-
-  try {
-    const user = await User.findOne({ where: { email } });
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    user.phone_number = phone_number;
-    await user.save();
-
-    const otp = crypto.randomInt(100000, 999999).toString();
-    user.otp = otp;
-    user.otp_expiry = moment().add(5, "minutes").toDate();
-    await user.save();
-    
-    const message = `Your OTP is: ${otp}. 
-It will expire in 5 minutes.`;
-    await axios.post("https://api.connectis.my.id/message", {
-      phoneNumber: `${phone_number}@c.us`,
-      message,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "OTP sent successfully",
-    });
-  } catch (error) {
-    console.error("Error sending OTP:", error);
-    res.status(500).json({
-      success: false,
-      message: "Error sending message",
-      error: error.message,
-    });
-  }
-};
-
-export const addEmail = async (req, res) => {
-  const { email } = req.body;
-  const userId = req.user.id;
-
-  try {
-    const user = await User.findByPk(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const existingEmail = await User.findOne({ where: { email } });
-    if (existingEmail) {
-      return res.status(400).json({ message: "Email is already in use" });
-    }
-
-    const otp = crypto.randomInt(100000, 999999).toString();
-    const otpExpiry = moment().add(5, "minutes").toDate();
-
-    user.email = email;
-    user.otp = otp;
-    user.otp_expiry = otpExpiry;
-    user.email_verified = 0;
-    await user.save();
-
-    const mailOptions = {
-      from: process.env.GMAIL_USER,
-      to: email,
-      subject: "Email Verification",
-      text: `Your OTP is: ${otp}. It will expire in 5 minutes.`,
-    };
-
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth:
-      {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS,
-      }
-    });
-
-    await transporter.sendMail(mailOptions);
-
-    return res.status(200).json({ message: "OTP sent" });
-  } catch (error) {
-    console.error("Error adding email:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-}
-
-export const verifyEmailOtp = async (req, res) => {
-  const { email, otp } = req.body;
-  const userId = req.user.id;
-
-  try {
-    const user = await User.findByPk(userId);
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    if (moment().isAfter(user.otp_expiry)) {
-      user.otp = null;
-      user.otp_expiry = null;
-      await user.save();
-
-      return res.status(400).json({ message: "OTP has expired" });
-    }
-
-    if (user.otp !== otp) {
-      return res.status(400).json({ message: "Invalid OTP" });
-    }
-
-    user.email_verified = 1;
-    user.otp = null;
-    user.otp_expiry = null;
-    await user.save();
-
-    return res.status(200).json({ message: "Email verified" });
-  } catch (error) {
-    console.error("Error verifying email OTP:", error);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-}
-
 export const changeProfile = async (req, res) => {
 
   const Userid = req.user.id;
@@ -640,28 +500,3 @@ export const changeProfile = async (req, res) => {
   }
 }
 
-cron.schedule("*/5 * * * *", async () => {
-  try {
-    const expiredUsers = await User.findAll({
-      where: {
-        otp_expiry: {
-          [Op.lt]: moment().toDate(),
-        },
-        otp: {
-          [Op.not]: null,
-        },
-      },
-    });
-
-    for (const user of expiredUsers) {
-      await user.update({
-        otp: null,
-        otp_expiry: null,
-      });
-    }
-
-    console.log("Expired OTPs removed successfully");
-  } catch (error) {
-    console.error("Error while removing expired OTPs:", error);
-  }
-});
