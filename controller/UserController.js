@@ -1,13 +1,9 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import dotenv from "dotenv";
-import axios from "axios";
 import moment from "moment";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
-import cron from "node-cron";
-import nodemailer from "nodemailer";
-import { Op } from "sequelize";
 import { OAuth2Client } from "google-auth-library";
 import whatsappClient from "../controller/wwebController.js";
 
@@ -62,7 +58,7 @@ export const register = async (req, res) => {
         otp_expiry: otpExpiry,
       });
 
-      const message = `Kode *OTP* : ${otp}. 
+      const message = `*Kode OTP* : ${otp}. 
 Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa dalam 5 menit.`;
       const phoneNumber = `${phone_number}@c.us`;
 
@@ -88,7 +84,7 @@ Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa da
       verified: false,
     });
 
-    const message = `Kode *OTP* : ${otp}. 
+    const message = `*Kode OTP* : ${otp}. 
 Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa dalam 5 menit.`;
     const phoneNumber = `${phone_number}@c.us`;
 
@@ -338,11 +334,11 @@ export const resetPasswordRequest = async (req, res) => {
     user.verified = false;
     await user.save();
 
-    // Whatsapp
-router.post("/message", (req, res) => {
-  whatsappClient.sendMessage(req.body.phoneNumber, req.body.message);
-  res.send();
-})
+    const message = `*Kode OTP* : ${otp}. 
+Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa dalam 5 menit.`;
+    const phoneNumber = `${phone_number}@c.us`;
+
+    whatsappClient.sendMessage(phoneNumber, message);
 
     return res.status(200).json({ message: "OTP sent" });
   } catch (error) {
@@ -416,7 +412,7 @@ export const sendOtp = async (req, res) => {
     user.otp_expiry = moment().add(5, "minutes").toDate();
     await user.save();
 
-    const message = `Kode *OTP* : ${otp}. 
+    const message = `*Kode OTP* : ${otp}. 
 Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa dalam 5 menit.`;
     const phoneNumber = `${phone_number}@c.us`;
 

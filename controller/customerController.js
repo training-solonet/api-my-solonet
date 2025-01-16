@@ -7,6 +7,10 @@ import LokasiKantor from "../models/lokasi_kantor.js";
 import haversine from "haversine-distance";
 import Tagihan from "../models/tagihan.js";
 import User from "../models/User.js";
+import axios from "axios";
+import crypto from "crypto";
+import moment from "moment";
+import whatsappClient from "../controller/wwebController.js";
 
 export const getProvinsi = async (req, res) => {
   try {
@@ -223,6 +227,44 @@ export const userNearKantorLocation = async (req, res) => {
 
     return res.json(nearestKantor);
   } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const hubungkanAccount = async (req, res) => {
+  const { pelanggan_id } = req.body;
+  const userId = req.user.id;
+
+  try {
+    // check if customer exists in API
+    const customer = await axios.get(`https://mysolonet.connectis.my.id/api/check-pelanggan/${pelanggan_id}`);
+
+    if (!customer) {
+      return res.status(404).json({ message: "Customer not found" });
+    }
+
+    // send OTP to customer
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpiry = moment().add(5, "minutes").toDate();
+
+    const user = await User.findOne({ where: { id: userId } });
+
+    // update user
+    user.otp = otp;
+    user.otp_expiry = otpExpiry;
+    user.save();
+
+    const phone_number = customer.whatsapp;
+
+    const message = `*Kode OTP* : ${otp}. 
+Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa dalam 5 menit.`;
+      const phoneNumber = `${phone_number}@c.us`;
+
+    whatsappClient.sendMessage(phoneNumber, message);
+
+    res.status(200).json({ message: "OTP sent. Please verify your number." });
+  }catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
   }
