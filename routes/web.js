@@ -8,7 +8,6 @@ import {
   verifyOtp,
   resetPasswordRequest,
   resetPassword,
-  addPhoneNumber,
   googleSignIn,
   changeProfile,
 } from "../controller/UserController.js";
@@ -49,7 +48,6 @@ router.post("/request-otp", resetPasswordRequest);
 router.post("/reset-password", resetPassword);
 router.put("/updateUser/:id", verifyToken, updateUser);
 router.put("/change-profile", verifyToken, changeProfile);
-router.post("/verify-number", addPhoneNumber);
 router.post("/google", googleSignIn);
 
 // Customer
