@@ -21,7 +21,7 @@ import {
   getKelurahanByKecamatan,
   getProvinsi,
   userNearKantorLocation,
-  hubungkanAccount
+  hubunggkanAccount
 } from "../controller/customerController.js";
 import { banner } from "../controller/bannerController.js";
 import { paket } from "../controller/productController.js";
@@ -62,7 +62,7 @@ router.get("/kelurahan/:kecamatan_id", verifyToken, getKelurahanByKecamatan);
 router.post("/nearLocation", userNearKantorLocation);
 router.get("/bts-location", getKoordinatBts)
 router.post("/coverage-bts", coverage2km);
-router.post("/hubungkan-account", verifyToken, hubungkanAccount);
+router.post("/hubungkan-account", verifyToken, hubunggkanAccount);
 
 // Product
 router.get("/paket", paket);
@@ -71,9 +71,6 @@ router.get("/detail-tagihan/:tagihan_id", verifyToken, detailTagihan);
 
 // Banner
 router.get("/banner", banner);
-
-// FAQ
-router.get("/faq", faq);
 
 // FAQ
 router.get("/faq", faq);

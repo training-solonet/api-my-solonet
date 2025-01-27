@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import dotenv from "dotenv";
-import moment from "moment";
+import moment from "moment-timezone";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
@@ -99,35 +99,6 @@ Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa da
   }
 };
 
-export const registerGoogle = async (profile) => {
-  try {
-    const newUser = await User.create({
-      name: profile.displayName,
-      email: profile.emails[0].value,
-      google_id: profile.id,
-    });
-
-    const token = jwt.sign(
-      { id: newUser.id, name: newUser.name, email: newUser.email },
-      process.env.JWT_SECRET,
-      { expiresIn: 86400 }
-    );
-
-    return {
-      token,
-      user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        isNewUser: true,
-      },
-    };
-  } catch (error) {
-    console.error("Error registering Google user:", error);
-    return null;
-  }
-};
-
 export const login = async (req, res) => {
   const { phone_number, password } = req.body;
 
@@ -161,44 +132,6 @@ export const login = async (req, res) => {
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-export const loginGoogle = async (profile) => {
-  try {
-    const user = await User.findOne({ where: { google_id: profile.id } });
-
-    if (!user) {
-      const user = await User.findOne({ where: { email: profile.emails[0].value } });
-
-      if (user && !user.google_id) {
-        user.google_id = profile.id;
-        await user.save();
-      }
-    }
-
-    if (!user) {
-      return user;
-    }
-
-    const token = jwt.sign(
-      { id: user.id, name: user.name, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: 86400 }
-    );
-
-    return {
-      token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        isNewUser: false,
-      },
-    };
-  } catch (error) {
-    console.error("Error login google", error);
-    return null;
   }
 };
 
@@ -407,9 +340,12 @@ export const sendOtp = async (req, res) => {
       });
     }
 
+    const currentTime = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
+    const otpExpiry = moment(currentTime).add(5, "minutes").toDate();
+
     const otp = crypto.randomInt(100000, 999999).toString();
     user.otp = otp;
-    user.otp_expiry = moment().add(5, "minutes").toDate();
+    user.otp_expiry = otpExpiry;
     await user.save();
 
     const message = `*Kode OTP* : ${otp}. 
@@ -436,6 +372,10 @@ Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa da
 export const verifyOtp = async (req, res) => {
   const { phone_number, otp } = req.body;
 
+  if (!phone_number || !otp) {
+    return res.status(400).json({ message: "Phone number and OTP are required" });
+  }
+
   try {
     const user = await User.findOne({ where: { phone_number } });
 
@@ -443,23 +383,26 @@ export const verifyOtp = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    if (moment().isAfter(user.otp_expiry)) {
-      user.otp = null;
-      user.otp_expiry = null;
-      await user.save();
-      return res.status(400).json({ message: "OTP has expired" });
-    }
-
     if (user.otp !== otp) {
       return res.status(400).json({ message: "Invalid OTP" });
     }
 
-    user.verified = true;
-    user.otp = null;
-    user.otp_expiry = null;
-    await user.save();
+    if (moment().tz("Asia/Jakarta").isSameOrAfter(moment(user.otp_expiry).tz("Asia/Jakarta"))) {
+      user.otp = null;
+      user.otp_expiry = null;
+      await user.save();
+      return res.status(400).json({ message: "OTP has expired" });
+  
+    }else{
+      user.verified = true;
+      user.otp = null;
+      user.otp_expiry = null;
+      await user.save();
 
-    return res.status(200).json({ message: "Phone number verified" });
+      return res.status(200).json({ message: "Phone number verified" });
+    }
+
+    
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal server error" });

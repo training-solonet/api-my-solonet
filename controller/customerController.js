@@ -10,7 +10,10 @@ import User from "../models/User.js";
 import axios from "axios";
 import crypto from "crypto";
 import moment from "moment";
+import dotenv from "dotenv";
 import whatsappClient from "../controller/wwebController.js";
+
+dotenv.config();
 
 export const getProvinsi = async (req, res) => {
   try {
@@ -232,38 +235,100 @@ export const userNearKantorLocation = async (req, res) => {
   }
 };
 
-export const hubungkanAccount = async (req, res) => {
-  const { pelanggan_id } = req.body;
+export const hubunggkanAccount = async (req, res) => {
+  const { id_pelanggan } = req.body;
   const userId = req.user.id;
+
+  if (!id_pelanggan) {
+    return res.status(400).json({ message: "ID Pelanggan required" });
+  }
 
   try {
     // check if customer exists in API
-    const customer = await axios.get(`https://mysolonet.connectis.my.id/api/check-pelanggan/${pelanggan_id}`);
+    const customer = await axios.post(
+      process.env.APP_CORE_URL + "/api/check-pelanggan",
+      { id_pelanggan }, 
+      {
+        headers: {
+          "X-Authorization": process.env.APP_CORE_KEY,
+        },
+      }
+    );
 
     if (!customer) {
       return res.status(404).json({ message: "Customer not found" });
     }
 
-    // send OTP to customer
-    const otp = crypto.randomInt(100000, 999999).toString();
-    const otpExpiry = moment().add(5, "minutes").toDate();
+    if(req.body.otp){
+      const user = await User.findOne({ where: { id: userId } });
 
-    const user = await User.findOne({ where: { id: userId } });
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
 
-    // update user
-    user.otp = otp;
-    user.otp_expiry = otpExpiry;
-    user.save();
+      if (user.otp !== req.body.otp) {
+        return res.status(400).json({ message: "Invalid OTP" });
+      }
 
-    const phone_number = customer.whatsapp;
+      if (moment().tz("Asia/Jakarta").isSameOrAfter(moment(user.otp_expiry).tz("Asia/Jakarta"))) {
+        user.otp = null;
+        user.otp_expiry = null;
+        await user.save();
+        return res.status(400).json({ message: "OTP has expired" });
+    
+      }else{
 
-    const message = `*Kode OTP* : ${otp}. 
-Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa dalam 5 menit.`;
-      const phoneNumber = `${phone_number}@c.us`;
+        if(req.body.hubungkan_account == true){
+          Customer.create({
+            user_id: userId,
+            id_pelanggan: customer.data.id_pelanggan,
+            nama: customer.data.nama,
+            nik: null,
+            provinsi_id: null,
+            kabupaten_id: null,
+            kecamatan_id: null,
+            kelurahan_id: null,
+            alamat: customer.data.alamat,
+            lat: null,
+            long: null,
+          });
 
-    whatsappClient.sendMessage(phoneNumber, message);
+          user.verified = true;
+          user.otp = null;
+          user.otp_expiry = null;
+          await user.save();
 
-    res.status(200).json({ message: "OTP sent. Please verify your number." });
+          res.status(200).json({ message: "Proses Hubungkan Akun Berhasil !", customer : customer.data });
+        }else{
+
+          res.status(200).json({ message: "OTP verified", customer : customer.data });
+        }
+      }
+    }else{
+
+      // send OTP to customer
+      const currentTime = moment().tz("Asia/Jakarta").format("YYYY-MM-DD HH:mm:ss");
+      const otpExpiry = moment(currentTime).add(5, "minutes").toDate();
+      const otp = crypto.randomInt(100000, 999999).toString();
+  
+      const user = await User.findOne({ where: { id: userId } });
+      user.otp = otp;
+      user.otp_expiry = otpExpiry;
+      await user.save();
+  
+      const phone_number = user.phone_number;
+      const maskedPhoneNumber = "x".repeat(user.phone_number.length - 4) + user.phone_number.slice(-4);
+  
+      const message = `*Kode OTP* : ${otp}. 
+  Hati - hati jangan berikan kode ini kepada siapapun. Kode ini akan kadaluarsa dalam 5 menit.`;
+        const phoneNumber = `${phone_number}@c.us`;
+  
+      whatsappClient.sendMessage(phoneNumber, message);
+  
+      res.status(200).json({ message: "OTP sent. Please verify your number.", phone_number : maskedPhoneNumber, id_pelanggan });
+
+    }
+
   }catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal server error" });
