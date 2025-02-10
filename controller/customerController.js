@@ -243,6 +243,12 @@ export const hubunggkanAccount = async (req, res) => {
     return res.status(400).json({ message: "ID Pelanggan required" });
   }
 
+  // check if user has already connected to a customer
+  const existingCustomer = await Customer.findOne({ where: { user_id: userId } });
+  if (existingCustomer) {
+    return res.status(400).json({ message: "User has already connected to a customer" });
+  }
+
   try {
     // check if customer exists in API
     const customer = await axios.post(
