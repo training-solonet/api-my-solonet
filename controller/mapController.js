@@ -10,9 +10,9 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
@@ -57,11 +57,11 @@ export const coverage2km = async (req, res) => {
           koordinat.lang
         );
 
-        return { 
-            lat: koordinat.lat,
-            long: koordinat.lang,
-            distance: `${distance.toFixed(2)} km`
-         };
+        return {
+          lat: koordinat.lat,
+          long: koordinat.lang,
+          distance: `${distance.toFixed(2)} km`
+        };
       })
       .filter((koordinat) => parseFloat(koordinat.distance) <= 2)
       .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));

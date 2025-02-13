@@ -137,8 +137,8 @@ export const login = async (req, res) => {
 
 export const googleSignIn = async (req, res) => {
   const { token } = req.body;
-  
-  try {    
+
+  try {
 
     const payload = await verifyGoogleToken(token);
 
@@ -392,8 +392,8 @@ export const verifyOtp = async (req, res) => {
       user.otp_expiry = null;
       await user.save();
       return res.status(400).json({ message: "OTP has expired" });
-  
-    }else{
+
+    } else {
       user.verified = true;
       user.otp = null;
       user.otp_expiry = null;
@@ -402,7 +402,7 @@ export const verifyOtp = async (req, res) => {
       return res.status(200).json({ message: "Phone number verified" });
     }
 
-    
+
   } catch (error) {
     console.log(error);
     return res.status(500).json({ message: "Internal server error" });
@@ -410,7 +410,6 @@ export const verifyOtp = async (req, res) => {
 };
 
 export const changeProfile = async (req, res) => {
-
   const Userid = req.user.id;
   const { name, phone_number, email } = req.body;
 
