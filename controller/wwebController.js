@@ -12,8 +12,20 @@ whatsappClient.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
 });
 
-whatsappClient.on("ready", () => {
+whatsappClient.on("ready", async () => {
     console.log("Client is ready");
+
+    const chats = await whatsappClient.getChats();
+
+    // Filter hanya grup
+    const groups = chats.filter(chat => chat.isGroup);
+
+    // Tampilkan semua nama dan ID grup
+    groups.forEach(group => {
+        console.log(`📛 Nama Grup: ${group.name}`);
+        console.log(`🆔 ID Grup: ${group.id._serialized}`);
+        console.log('---');
+    });
 });
 
 whatsappClient.on("message", async (msg) => {

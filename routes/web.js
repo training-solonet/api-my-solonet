@@ -27,7 +27,6 @@ import { banner } from "../controller/bannerController.js";
 import { paket } from "../controller/productController.js";
 import { tagihanUser } from "../controller/tagihanController.js";
 import { faq } from "../controller/faqController.js";
-import whatsappClient from "../controller/wwebController.js";
 import {
   bniApi,
   BniInquiry,
@@ -36,6 +35,7 @@ import {
 } from "../controller/virtualAccountController.js";
 import { detailTagihan } from "../controller/detailTagihanController.js";
 import { coverage2km, getKoordinatBts } from "../controller/mapController.js";
+import { postMessage } from "../controller/messageController.js";
 
 const router = express.Router();
 
@@ -81,5 +81,8 @@ router.post("/bni-inquiry", verifyToken, BniInquiry);
 router.post("/bri", verifyToken, briApi);
 router.post("/bri-inquiry", verifyToken, checkPembayaranBriva);
 router.get("/detail-tagihan/:tagihan_id", verifyToken, detailTagihan);
+
+// Message
+router.post("/message", postMessage);
 
 export default router;
