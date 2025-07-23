@@ -24,6 +24,8 @@ whatsappClient.on("message", async (msg) => {
     const chat = await msg.getChat();
 
       if (chat.id.user === '6281902265608') {
+
+        console.log("Pesan diterima dari nomor yang ditentukan:", msg.body);
     
         // post ke virtual agent
         try {
@@ -49,6 +51,8 @@ whatsappClient.on("message", async (msg) => {
           );
     
           const reply = response.data.choices[0].message.content;
+
+          console.log("Balasan dari OpenRouter:", reply);
     
           // respon ke whatsapp
           await whatsappClient.sendMessage(chat.id._serialized, reply);
