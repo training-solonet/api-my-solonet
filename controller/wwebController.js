@@ -1,4 +1,5 @@
 import whatsapp from "whatsapp-web.js";
+import MemoryChat from "../models/memory_chat.js";
 const { Client, LocalAuth } = whatsapp;
 import axios from "axios";
 import dotenv from "dotenv";
@@ -23,19 +24,37 @@ whatsappClient.on("ready", async () => {
 whatsappClient.on("message", async (msg) => {
     const chat = await msg.getChat();
 
-      if (chat.id.user === '6281902265608') {
+      if (chat.id.user === '6287812952426') {
 
         console.log("Pesan diterima dari nomor yang ditentukan:", msg.body);
-    
+
+        // ambil memory chat berdasarkan nomor telepon
+        const memoryChat = await MemoryChat.findAll({
+            where: {
+                from: chat.id.user
+            },
+            order: [['created_at', 'DESC']],
+            limit: 10
+        });
+
         // post ke virtual agent
         try {
           const userPrompt = msg.body;
-    
+
+          const base_system_message = { 
+            role: "system", 
+            content: "Kamu adalah seorang customer service profesional pada perusahaan bernama solonet yang bergerak pada industri telekomunikasi, di solonet menerima program pkl atau magang untuk sekolah dan universitas, syarat untuk siswa pkl antara lain : wajib memiliki laptop sendiri, membayar biaya 250ribu dan membuat cv. di solonet siswa pkl dibagi menjadi 2 bagian, yaitu pemrograman dan jaringan, akan ada proses wawancara untuk seleksi, sekarang kamu sebagai customer service yang akan fokus merespon pertanyaan chat whatsapp dari calon siswa pkl, jelaskan secara profesional dan ramah pastikan bisa terrender pada whatsapp, cukup respon chat seperlunya dan tidak terlalu panjang, jangan sampai terlihat bahwa chatbot atau ai, respon se natural mungkin seperti customer service profesional, tanyakan informasi penting seperti nama, asal sekolah, berapa lama periode magang atau pkl, serta memilih pemrograman atau jaringan, hindari penggunaan emotikon atau simbol yang tidak perlu" 
+          };
+
           const messages = [
-            { role: "system", content: "Kamu adalah seorang customer service profesional pada perusahaan bernama solonet yang bergerak pada industri telekomunikasi, di solonet menerima program pkl atau magang untuk sekolah dan universitas, syarat untuk siswa pkl antara lain : wajib memiliki laptop sendiri, membayar biaya 250ribu dan membuat cv. di solonet siswa pkl dibagi menjadi 2 bagian, yaitu pemrograman dan jaringan, akan ada proses wawancara untuk seleksi, sekarang kamu sebagai customer service yang akan fokus merespon pertanyaan chat whatsapp dari calon siswa pkl, jelaskan secara profesional dan ramah pastikan bisa terrender pada whatsapp" },
+            base_system_message,
+            ...memoryChat.map(chat => ({
+                role: chat.from === chat.id.user ? "user" : "assistant",
+                content: chat.from === chat.id.user ? chat.user : chat.assistant
+            })),
             { role: "user", content: userPrompt }
           ];
-    
+
           const response = await axios.post(
             'https://openrouter.ai/api/v1/chat/completions',
             {
@@ -56,7 +75,14 @@ whatsappClient.on("message", async (msg) => {
     
           // respon ke whatsapp
           await whatsappClient.sendMessage(chat.id._serialized, reply);
-    
+
+          // simpan ke memory chat
+          await MemoryChat.create({
+            from: chat.id.user,
+            user: userPrompt,
+            assistant: reply
+          });
+
         } catch (err) {
           console.error(err.response?.data || err.message);
           res.status(500).json({ error: 'Gagal memanggil OpenRouter API' });
