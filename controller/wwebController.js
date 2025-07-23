@@ -1,5 +1,6 @@
 import whatsapp from "whatsapp-web.js";
 const { Client, LocalAuth } = whatsapp;
+import axios from "axios";
 import dotenv from "dotenv";
 dotenv.config();
 
