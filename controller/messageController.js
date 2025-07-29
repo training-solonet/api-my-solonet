@@ -46,8 +46,9 @@ export const postMessage = async (req, res) => {
             );
 
             const reply = response.data.choices[0].message.content;
+            console.log("Balasan dari OpenRouter:", reply);
 
-            await whatsappClient.sendMessage(to, reply);
+            // await whatsappClient.sendMessage(to, reply);
             return res.status(200).json({ message: "Pesan berhasil dikirim" });
         } catch (err) {
             console.error(err.response?.data || err.message);
