@@ -19,7 +19,6 @@ export const postMessage = async (req, res) => {
         }
 
         try {
-            const userPrompt = msg.body;
 
             const base_system_message = {
                 role: "system",
@@ -28,7 +27,7 @@ export const postMessage = async (req, res) => {
 
             const messages = [
                 base_system_message,
-                { role: "user", content: userPrompt }
+                { role: "user", content: message }
             ];
 
             const response = await axios.post(
