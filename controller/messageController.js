@@ -33,7 +33,7 @@ export const postMessage = async (req, res) => {
             const response = await axios.post(
                 'https://openrouter.ai/api/v1/chat/completions',
                 {
-                    model: 'deepseek/deepseek-chat-v3-0324:free',
+                    model: 'tngtech/deepseek-r1t2-chimera:free',
                     messages: messages
                 },
                 {
@@ -47,7 +47,7 @@ export const postMessage = async (req, res) => {
             const reply = response.data.choices[0].message.content;
             console.log("Balasan dari OpenRouter:", reply);
 
-            // await whatsappClient.sendMessage(to, reply);
+            await whatsappClient.sendMessage(to, reply);
             return res.status(200).json({ message: "Pesan berhasil dikirim" });
         } catch (err) {
             console.error(err.response?.data || err.message);

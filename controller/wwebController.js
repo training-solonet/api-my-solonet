@@ -83,7 +83,7 @@ async function processUserMessages(chat, messageBuffer) {
         const response = await axios.post(
             'https://openrouter.ai/api/v1/chat/completions',
             {
-                model: 'deepseek/deepseek-chat-v3-0324:free',
+                model: 'tngtech/deepseek-r1t2-chimera:free',
                 messages: messages
             },
             {
